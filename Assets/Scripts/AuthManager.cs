@@ -20,10 +20,13 @@ public class AuthManager : MonoBehaviour
     public TextMeshProUGUI signUpErrorText;
 
     [Header("Canvases")]
-    public GameObject loginCanvas;                 // Login UI Canvas
-    public GameObject signUpCanvas;                // Sign Up UI Canvas
-    public GameObject signupSetupLandingCanvas;    // Canvas shown after Sign Up
-    public GameObject userHomeCanvas;              // Canvas shown after Login
+    public GameObject loginCanvas;
+    public GameObject signUpCanvas;
+    public GameObject signupSetupLandingCanvas;
+    public GameObject userHomeCanvas;
+
+    [Header("Managers")]
+    public ProfileManager profileManager; // Assign in Inspector
 
     private FirebaseAuth auth;
 
@@ -74,9 +77,14 @@ public class AuthManager : MonoBehaviour
             FirebaseUser user = task.Result.User;
             loginErrorText.text = "Login successful. Welcome, " + user.Email;
 
-            // Switch UI to User Home
             loginCanvas.SetActive(false);
             userHomeCanvas.SetActive(true);
+
+            // Load and show profile after login
+            if (profileManager != null)
+            {
+                profileManager.LoadAndShowProfileAfterLogin();
+            }
         });
     }
 
@@ -121,7 +129,6 @@ public class AuthManager : MonoBehaviour
             FirebaseUser newUser = task.Result.User;
             signUpErrorText.text = "Sign up successful. Welcome, " + newUser.Email;
 
-            // Switch UI to Signup Setup Landing
             signUpCanvas.SetActive(false);
             signupSetupLandingCanvas.SetActive(true);
         });
@@ -133,16 +140,50 @@ public class AuthManager : MonoBehaviour
         return Regex.IsMatch(email, pattern);
     }
 
-    private string GetErrorMessage(System.AggregateException exception)
+   private string GetErrorMessage(System.AggregateException exception)
+{
+    if (exception == null) return "An unknown error occurred.";
+
+    foreach (var e in exception.InnerExceptions)
     {
-        if (exception == null) return "Unknown error";
-        foreach (var e in exception.InnerExceptions)
+        if (e is FirebaseException firebaseEx)
         {
-            if (e is FirebaseException firebaseEx)
+            switch ((Firebase.Auth.AuthError)firebaseEx.ErrorCode)
             {
-                return firebaseEx.Message;
+                case Firebase.Auth.AuthError.InvalidEmail:
+                    return "Invalid email address format.";
+                case Firebase.Auth.AuthError.WrongPassword:
+                case Firebase.Auth.AuthError.UserNotFound:
+                    return "Incorrect email or password.";
+                case Firebase.Auth.AuthError.UserDisabled:
+                    return "Your account has been disabled.";
+                case Firebase.Auth.AuthError.WeakPassword:
+                    return "Password is too weak.";
+                case Firebase.Auth.AuthError.EmailAlreadyInUse:
+                    return "Email is already in use.";
+                default:
+                    break; // Fall through to default message
             }
         }
-        return exception.InnerExceptions[0].Message;
+    }
+
+    // Fallback: don't say internal error — show friendly message
+    return "Incorrect email or password.";
+}
+
+
+
+    public void Logout()
+    {
+        if (auth != null)
+        {
+            auth.SignOut();  // Sign out from Firebase
+        }
+
+        // Hide user-specific UI and show the landing/login page
+        userHomeCanvas.SetActive(false);
+        signUpCanvas.SetActive(false);
+        signupSetupLandingCanvas.SetActive(false);
+        loginCanvas.SetActive(true);
     }
 }
