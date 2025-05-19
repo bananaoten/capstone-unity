@@ -1,13 +1,16 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using Firebase;
 using Firebase.Auth;
 using Firebase.Database;
+using Firebase.Extensions;
 using System.Threading.Tasks;
 
 public class ProfileManager : MonoBehaviour
 {
     [Header("UI Canvases")]
+    public GameObject landingPage;
     public GameObject profileSetupPage;
     public GameObject profilePage;
     public GameObject welcomePage;
@@ -27,29 +30,52 @@ public class ProfileManager : MonoBehaviour
     public TMP_Text contactNumberText;
 
     [Header("Validation Messages")]
-    public TMP_Text setupValidationText;      // For setup page validation
-    public TMP_Text updateValidationText;     // For update profile validation (assign in inspector)
+    public TMP_Text setupValidationText;
+    public TMP_Text updateValidationText;
 
     [Header("Buttons")]
     public Button proceedButton;
     public Button updateButton;
 
     private FirebaseAuth auth;
+    private bool firebaseReady = false;
 
-    void Start()
+    async void Start()
     {
-        auth = FirebaseAuth.DefaultInstance;
         SetAllPagesInactive();
 
-        if (proceedButton != null)
-            proceedButton.onClick.AddListener(OnProceedButtonClicked);
+        // Show only the landing page at first
+        if (landingPage != null)
+            landingPage.SetActive(true);
 
-        if (updateButton != null)
-            updateButton.onClick.AddListener(OnUpdateProfileClicked);
+        var dependencyStatus = await FirebaseApp.CheckAndFixDependenciesAsync();
+        if (dependencyStatus == DependencyStatus.Available)
+        {
+            auth = FirebaseAuth.DefaultInstance;
+            firebaseReady = true;
+
+            if (proceedButton != null)
+                proceedButton.onClick.AddListener(OnProceedButtonClicked);
+
+            if (updateButton != null)
+                updateButton.onClick.AddListener(OnUpdateProfileClicked);
+
+            Debug.Log("Firebase is ready.");
+        }
+        else
+        {
+            Debug.LogError("Could not resolve all Firebase dependencies: " + dependencyStatus);
+        }
     }
 
     public void StartProfileFlow()
     {
+        if (auth.CurrentUser == null)
+        {
+            Debug.Log("No user logged in.");
+            return;
+        }
+
         bool profileCompleted = PlayerPrefs.GetInt("ProfileCompleted", 0) == 1;
 
         if (profileCompleted)
@@ -65,21 +91,26 @@ public class ProfileManager : MonoBehaviour
 
     public void ShowProfileSetupPage()
     {
+        SetAllPagesInactive();
         profileSetupPage.SetActive(true);
-        profilePage.SetActive(false);
-        welcomePage.SetActive(false);
         setupValidationText.text = "";
     }
 
     public void ShowWelcomePage()
     {
-        profileSetupPage.SetActive(false);
-        profilePage.SetActive(false);
+        SetAllPagesInactive();
         welcomePage.SetActive(true);
     }
 
     public void OnProceedButtonClicked()
     {
+        Debug.Log("Proceed button clicked.");
+        if (!firebaseReady || auth.CurrentUser == null)
+        {
+            setupValidationText.text = "Please wait... Firebase is not ready.";
+            return;
+        }
+
         SaveProfileAsync();
     }
 
@@ -117,13 +148,13 @@ public class ProfileManager : MonoBehaviour
 
         string fullName = firstName + " " + lastName;
         string userId = auth.CurrentUser.UserId;
-        string email = auth.CurrentUser.Email; // ✅ Get the email
+        string email = auth.CurrentUser.Email;
 
         var profileData = new UserProfileData()
         {
             FullName = fullName,
             ContactNumber = contact,
-            Email = email // ✅ Store email
+            Email = email
         };
 
         string json = JsonUtility.ToJson(profileData);
@@ -141,6 +172,7 @@ public class ProfileManager : MonoBehaviour
         }
         catch (System.Exception ex)
         {
+            setupValidationText.text = "Failed to save profile: " + ex.Message;
             Debug.LogError("Error saving profile: " + ex.Message);
         }
     }
@@ -168,20 +200,12 @@ public class ProfileManager : MonoBehaviour
                 fullNameText.text = data.FullName;
                 contactNumberText.text = data.ContactNumber;
                 updateFullNameInput.text = data.FullName;
-
-                Debug.Log("Loaded Email: " + data.Email); // Optional: See if email loads
             }
         }
         catch (System.Exception ex)
         {
             Debug.LogError("Error loading profile: " + ex.Message);
         }
-    }
-
-    public void LoadAndShowProfileAfterLogin()
-    {
-        ShowWelcomePage();
-        LoadProfileData();
     }
 
     public async void OnUpdateProfileClicked()
@@ -211,9 +235,9 @@ public class ProfileManager : MonoBehaviour
             return;
         }
 
-        if (newPassword.Length < 6)
+        if (newPassword.Length < 8)
         {
-            updateValidationText.text = "New password must be at least 6 characters.";
+            updateValidationText.text = "New password must be at least 8 characters.";
             return;
         }
 
@@ -240,7 +264,6 @@ public class ProfileManager : MonoBehaviour
         {
             await user.UpdatePasswordAsync(newPassword);
 
-            // Update name in Firebase Realtime Database
             string userId = user.UserId;
             var reference = FirebaseDatabase.DefaultInstance.RootReference;
 
@@ -248,13 +271,12 @@ public class ProfileManager : MonoBehaviour
             {
                 FullName = fullName,
                 ContactNumber = contactNumberText.text,
-                Email = user.Email // ✅ Keep email up to date
+                Email = user.Email
             };
 
             string json = JsonUtility.ToJson(profileUpdate);
             await reference.Child("users").Child(userId).Child("profile").SetRawJsonValueAsync(json);
 
-            // Update UI
             fullNameText.text = fullName;
             updateFullNameInput.text = fullName;
 
@@ -263,7 +285,7 @@ public class ProfileManager : MonoBehaviour
         }
         catch (System.Exception ex)
         {
-            updateValidationText.text = "Failed to update password: " + ex.Message;
+            updateValidationText.text = "Failed to update: " + ex.Message;
         }
     }
 
@@ -278,16 +300,23 @@ public class ProfileManager : MonoBehaviour
 
     private void SetAllPagesInactive()
     {
+        if (landingPage != null) landingPage.SetActive(false);
         if (profileSetupPage != null) profileSetupPage.SetActive(false);
         if (profilePage != null) profilePage.SetActive(false);
-        if (welcomePage != null) profilePage.SetActive(false);
+        if (welcomePage != null) welcomePage.SetActive(false);
+    }
+
+    public void LoadAndShowProfileAfterLogin()
+    {
+        ShowWelcomePage();
+        LoadProfileData();
     }
 }
 
 [System.Serializable]
-public class UserProfileData    
+public class UserProfileData
 {
     public string FullName;
     public string ContactNumber;
-    public string Email; // ✅ Added email
+    public string Email;
 }
