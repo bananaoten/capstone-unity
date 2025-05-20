@@ -15,13 +15,30 @@ public class ModelViewManager : MonoBehaviour
     private DatabaseReference dbReference;
     private FirebaseAuth auth;
 
-    void Start()
+    async void Start()
+{
+    var dependencyStatus = await Firebase.FirebaseApp.CheckAndFixDependenciesAsync();
+    if (dependencyStatus == Firebase.DependencyStatus.Available)
     {
         auth = FirebaseAuth.DefaultInstance;
         dbReference = FirebaseDatabase.DefaultInstance.RootReference;
 
-        LoadViewCount();
+        if (auth.CurrentUser != null)
+        {
+            Debug.Log("Firebase and user ready.");
+            LoadViewCount(); // only after confirming
+        }
+        else
+        {
+            Debug.LogWarning("No user signed in.");
+        }
     }
+    else
+    {
+        Debug.LogError("Could not resolve Firebase dependencies: " + dependencyStatus);
+    }
+}
+
 
     public async void OnModel1ButtonClick()
     {

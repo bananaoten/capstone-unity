@@ -12,110 +12,123 @@ public class HeartManager : MonoBehaviour
     public TMP_Text heartCountText;
 
     [Header("Heart Sprites")]
-    public Sprite heartOutlineSprite;  // default empty heart
-    public Sprite heartFilledSprite;   // filled heart when liked
+    public Sprite heartOutlineSprite;
+    public Sprite heartFilledSprite;
 
-    private Image heartImage;           // will be assigned automatically
-
+    private Image heartImage;
     private FirebaseAuth auth;
-    private string userId;
-    private int heartCount = 0;
-    private bool hasHearted = false;
+    private DatabaseReference dbRef;
 
-    // Fixed model ID to track in Firebase
+    private string userId;
     private string modelId = "model1";
 
-    void Start()
-    {
-        auth = FirebaseAuth.DefaultInstance;
+    private bool hasHearted = false;
+    private int heartCount = 0;
 
-        // Auto get the Image component from the heart button GameObject or its child
+    async void Start()
+    {
+        // Setup references
+        auth = FirebaseAuth.DefaultInstance;
+        dbRef = FirebaseDatabase.DefaultInstance.RootReference;
         heartImage = heartButton.GetComponent<Image>();
-        if (heartImage == null)
+
+        heartButton.interactable = false; // Disable until Firebase is ready
+        heartButton.onClick.AddListener(OnHeartButtonClicked);
+
+        // Wait for Firebase Auth to be ready
+        await WaitForUserLogin();
+
+        if (!string.IsNullOrEmpty(userId))
         {
-            heartImage = heartButton.GetComponentInChildren<Image>();
+            await LoadHeartDataAsync();  // Load heart info
+            UpdateHeartUI();            // Update UI visuals
+            heartButton.interactable = true; // Enable button
+        }
+        else
+        {
+            Debug.LogError("HeartManager: Firebase user is null.");
+        }
+    }
+
+    async Task WaitForUserLogin()
+    {
+        int retries = 0;
+        while (auth.CurrentUser == null && retries < 50) // Wait up to 5 seconds
+        {
+            await Task.Delay(100);
+            retries++;
         }
 
         if (auth.CurrentUser != null)
         {
             userId = auth.CurrentUser.UserId;
-            heartButton.onClick.AddListener(OnHeartButtonClicked);
-            LoadHeartDataAsync();
+            Debug.Log("HeartManager: Firebase user ready.");
         }
         else
         {
-            Debug.LogError("User not logged in.");
+            Debug.LogWarning("HeartManager: Firebase user still null after waiting.");
         }
     }
 
-    private async void LoadHeartDataAsync()
+    private async Task LoadHeartDataAsync()
     {
-        var reference = FirebaseDatabase.DefaultInstance.RootReference;
-
-        // Load heart count
-        var heartCountSnapshot = await reference.Child("models").Child(modelId).Child("heartCount").GetValueAsync();
-        if (heartCountSnapshot.Exists)
+        try
         {
-            heartCount = int.Parse(heartCountSnapshot.Value.ToString());
+            // Get total heart count
+            var heartCountSnap = await dbRef.Child("models").Child(modelId).Child("heartCount").GetValueAsync();
+            if (heartCountSnap.Exists)
+            {
+                int.TryParse(heartCountSnap.Value.ToString(), out heartCount);
+            }
+
+            // Check if this user has already hearted
+            var userHeartSnap = await dbRef.Child("models").Child(modelId).Child("heartedUsers").Child(userId).GetValueAsync();
+            hasHearted = userHeartSnap.Exists && userHeartSnap.Value.ToString() == "true";
+
+            heartCountText.text = heartCount.ToString();
         }
-        else
+        catch (System.Exception e)
         {
-            heartCount = 0;
+            Debug.LogError("HeartManager: Error loading data - " + e.Message);
         }
-        heartCountText.text = heartCount.ToString();
-
-        // Check if user has hearted this model
-        var userHeartSnapshot = await reference.Child("models").Child(modelId).Child("heartedUsers").Child(userId).GetValueAsync();
-        hasHearted = userHeartSnapshot.Exists && userHeartSnapshot.Value.ToString() == "true";
-
-        UpdateHeartUI();
     }
 
     private async void OnHeartButtonClicked()
     {
-        var reference = FirebaseDatabase.DefaultInstance.RootReference;
+        if (string.IsNullOrEmpty(userId)) return;
 
-        if (!hasHearted)
+        try
         {
-            // User likes the model
-            heartCount++;
-            hasHearted = true;
+            if (hasHearted)
+            {
+                // Unlike
+                heartCount = Mathf.Max(heartCount - 1, 0);
+                await dbRef.Child("models").Child(modelId).Child("heartedUsers").Child(userId).RemoveValueAsync();
+            }
+            else
+            {
+                // Like
+                heartCount += 1;
+                await dbRef.Child("models").Child(modelId).Child("heartedUsers").Child(userId).SetValueAsync(true);
+            }
+
+            hasHearted = !hasHearted;
+            await dbRef.Child("models").Child(modelId).Child("heartCount").SetValueAsync(heartCount);
             heartCountText.text = heartCount.ToString();
 
-            // Update Firebase
-            await reference.Child("models").Child(modelId).Child("heartCount").SetValueAsync(heartCount);
-            await reference.Child("models").Child(modelId).Child("heartedUsers").Child(userId).SetValueAsync(true);
+            UpdateHeartUI();
         }
-        else
+        catch (System.Exception ex)
         {
-            // User unlikes the model
-            heartCount = Mathf.Max(heartCount - 1, 0);
-            hasHearted = false;
-            heartCountText.text = heartCount.ToString();
-
-            // Update Firebase
-            await reference.Child("models").Child(modelId).Child("heartCount").SetValueAsync(heartCount);
-            await reference.Child("models").Child(modelId).Child("heartedUsers").Child(userId).RemoveValueAsync();
+            Debug.LogError("HeartManager: Error updating heart - " + ex.Message);
         }
-
-        UpdateHeartUI();
     }
 
     private void UpdateHeartUI()
     {
-        if (heartImage == null)
+        if (heartImage != null)
         {
-            Debug.LogWarning("Heart image component not found!");
-            return;
-        }
-
-        if (hasHearted)
-        {
-            heartImage.sprite = heartFilledSprite;
-        }
-        else
-        {
-            heartImage.sprite = heartOutlineSprite;
+            heartImage.sprite = hasHearted ? heartFilledSprite : heartOutlineSprite;
         }
     }
 }
