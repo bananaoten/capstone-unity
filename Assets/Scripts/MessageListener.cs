@@ -9,9 +9,8 @@ using System.Collections.Generic;
 public class MessageListener : MonoBehaviour
 {
     public Transform contentPanel; // ScrollView/Viewport/Content
-    public GameObject messageBubblePrefab;
-    public Color userColor = new Color(0.7f, 0.9f, 1f);   // Light blue
-    public Color adminColor = new Color(0.9f, 0.9f, 0.9f); // Light gray
+    public GameObject leftMessagePrefab;  // For admin (left side)
+    public GameObject rightMessagePrefab; // For user (right side)
 
     private string currentUserId;
     private DatabaseReference msgRef;
@@ -22,19 +21,16 @@ public class MessageListener : MonoBehaviour
     {
         scrollRect = contentPanel.parent.parent.GetComponent<ScrollRect>();
 
-        // Automatically subscribe if already logged in
         if (FirebaseAuth.DefaultInstance.CurrentUser != null)
         {
             SubscribeToCurrentUser();
         }
 
-        // Listen for login state changes
         FirebaseAuth.DefaultInstance.StateChanged += HandleAuthStateChanged;
     }
 
     void OnDestroy()
     {
-        // Clean up
         FirebaseAuth.DefaultInstance.StateChanged -= HandleAuthStateChanged;
         if (msgRef != null)
         {
@@ -62,7 +58,6 @@ public class MessageListener : MonoBehaviour
         if (isListening && msgRef != null)
         {
             msgRef.ChildAdded -= HandleNewMessage;
-            Debug.Log($"Unsubscribed from old user: {currentUserId}");
             ClearMessageUI();
         }
 
@@ -73,10 +68,7 @@ public class MessageListener : MonoBehaviour
         msgRef.GetValueAsync().ContinueWith(task =>
         {
             if (task.IsFaulted || task.IsCanceled)
-            {
-                Debug.LogError("Failed to get messages: " + task.Exception);
                 return;
-            }
 
             DataSnapshot snapshot = task.Result;
 
@@ -95,11 +87,8 @@ public class MessageListener : MonoBehaviour
             StartCoroutine(ScrollToBottomCoroutine());
         });
 
-        // Listen for new messages
         msgRef.ChildAdded += HandleNewMessage;
         isListening = true;
-
-        Debug.Log($"Subscribed to user: {currentUserId}");
     }
 
     private void HandleNewMessage(object sender, ChildChangedEventArgs args)
@@ -109,10 +98,7 @@ public class MessageListener : MonoBehaviour
 
         var data = args.Snapshot.Value as Dictionary<string, object>;
         if (data == null || !data.ContainsKey("from") || !data.ContainsKey("text"))
-        {
-            Debug.LogWarning("Message data missing 'from' or 'text'");
             return;
-        }
 
         string from = data["from"].ToString();
         string text = data["text"].ToString();
@@ -123,20 +109,16 @@ public class MessageListener : MonoBehaviour
 
     public void DisplayMessageLocally(string from, string text)
     {
-        GameObject bubble = Instantiate(messageBubblePrefab, contentPanel);
+        GameObject prefabToUse = from == "admin" ? leftMessagePrefab : rightMessagePrefab;
+        GameObject bubble = Instantiate(prefabToUse, contentPanel);
         TMP_Text messageText = bubble.GetComponentInChildren<TMP_Text>();
         messageText.text = text;
-
-        Image bg = bubble.GetComponent<Image>();
-        bg.color = from == "admin" ? adminColor : userColor;
     }
 
     private IEnumerator ScrollToBottomCoroutine()
     {
         yield return new WaitForEndOfFrame();
         LayoutRebuilder.ForceRebuildLayoutImmediate(contentPanel.GetComponent<RectTransform>());
-        scrollRect.verticalNormalizedPosition = 0f;
-        yield return null;
         scrollRect.verticalNormalizedPosition = 0f;
     }
 
