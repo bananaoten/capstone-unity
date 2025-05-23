@@ -4,15 +4,17 @@ using Firebase.Database;
 using Firebase.Auth;
 using System.Threading.Tasks;
 
-public class ModelViewManager : MonoBehaviour
+public class TreelaneModelViewManager : MonoBehaviour
 {
-    public GameObject userHomeLancrisCanvas;
+    public GameObject userHomeCanvas;
 
-    public GameObject propertyDetailsLancrisCornerCanvas;
-    public GameObject propertyDetailsLancrisMiddleCanvas;
+    public GameObject propertyDetailsLeftCanvas;
+    public GameObject propertyDetailsMiddleCanvas;
+    public GameObject propertyDetailsRightCanvas;
 
-    public TMP_Text viewTextCorner;
+    public TMP_Text viewTextLeft;
     public TMP_Text viewTextMiddle;
+    public TMP_Text viewTextRight;
 
     private DatabaseReference dbReference;
     private FirebaseAuth auth;
@@ -28,9 +30,9 @@ public class ModelViewManager : MonoBehaviour
             if (auth.CurrentUser != null)
             {
                 Debug.Log("Firebase and user ready.");
-
-                LoadViewCount("lancriscorner", viewTextCorner);
-                LoadViewCount("lancrismiddle", viewTextMiddle);
+                LoadViewCount("treelanecornerleft", viewTextLeft);
+                LoadViewCount("treelanemiddle", viewTextMiddle);
+                LoadViewCount("treelanecornerright", viewTextRight);
             }
             else
             {
@@ -43,18 +45,25 @@ public class ModelViewManager : MonoBehaviour
         }
     }
 
-    public async void OnClickLancrisCornerModel()
+    public async void OnClickLeftModel()
     {
-        await IncrementViewCount("lancriscorner", viewTextCorner);
-        userHomeLancrisCanvas.SetActive(false);
-        propertyDetailsLancrisCornerCanvas.SetActive(true);
+        await IncrementViewCount("treelanecornerleft", viewTextLeft);
+        userHomeCanvas.SetActive(false);
+        propertyDetailsLeftCanvas.SetActive(true);
     }
 
-    public async void OnClickLancrisMiddleModel()
+    public async void OnClickMiddleModel()
     {
-        await IncrementViewCount("lancrismiddle", viewTextMiddle);
-        userHomeLancrisCanvas.SetActive(false);
-        propertyDetailsLancrisMiddleCanvas.SetActive(true);
+        await IncrementViewCount("treelanemiddle", viewTextMiddle);
+        userHomeCanvas.SetActive(false);
+        propertyDetailsMiddleCanvas.SetActive(true);
+    }
+
+    public async void OnClickRightModel()
+    {
+        await IncrementViewCount("treelanecornerright", viewTextRight);
+        userHomeCanvas.SetActive(false);
+        propertyDetailsRightCanvas.SetActive(true);
     }
 
     private async Task IncrementViewCount(string modelId, TMP_Text viewText)

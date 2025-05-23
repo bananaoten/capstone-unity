@@ -5,10 +5,10 @@ using Firebase.Auth;
 using Firebase.Database;
 using System.Threading.Tasks;
 
-public class HeartManager : MonoBehaviour
+public class HeartManager_Treelane : MonoBehaviour  
 {
     [System.Serializable]
-    public class LancrisModel
+    public class TreelaneModel
     {
         public string modelId;
         public Button heartButton;
@@ -18,10 +18,11 @@ public class HeartManager : MonoBehaviour
         [HideInInspector] public int heartCount;
     }
 
-    [Header("Lancris Models")]
+    [Header("Treelane Models")]
     public GameObject userHomeCanvas;
-    public LancrisModel lancrisCorner;
-    public LancrisModel lancrisMiddle;
+    public TreelaneModel treelaneCornerLeft;
+    public TreelaneModel treelaneMiddle;
+    public TreelaneModel treelaneCornerRight;
 
     [Header("Heart Sprites")]
     public Sprite heartOutlineSprite;
@@ -36,8 +37,9 @@ public class HeartManager : MonoBehaviour
         auth = FirebaseAuth.DefaultInstance;
         dbRef = FirebaseDatabase.DefaultInstance.RootReference;
 
-        SetupModel(lancrisCorner);
-        SetupModel(lancrisMiddle);
+        SetupModel(treelaneCornerLeft);
+        SetupModel(treelaneMiddle);
+        SetupModel(treelaneCornerRight);
 
         await WaitForUserLogin();
     }
@@ -62,7 +64,7 @@ public class HeartManager : MonoBehaviour
         }
     }
 
-    private void SetupModel(LancrisModel model)
+    private void SetupModel(TreelaneModel model)
     {
         if (model.heartButton != null)
         {
@@ -73,11 +75,12 @@ public class HeartManager : MonoBehaviour
 
     private async Task LoadAllHeartData()
     {
-        await LoadHeartData(lancrisCorner);
-        await LoadHeartData(lancrisMiddle);
+        await LoadHeartData(treelaneCornerLeft);
+        await LoadHeartData(treelaneMiddle);
+        await LoadHeartData(treelaneCornerRight);
     }
 
-    private async Task LoadHeartData(LancrisModel model)
+    private async Task LoadHeartData(TreelaneModel model)
     {
         if (model.heartCountText == null || string.IsNullOrEmpty(model.modelId)) return;
 
@@ -97,45 +100,45 @@ public class HeartManager : MonoBehaviour
         model.heartButton.interactable = true;
     }
 
-    private async void OnHeartButtonClicked(LancrisModel model)
+    private async void OnHeartButtonClicked(TreelaneModel model)
     {
         if (string.IsNullOrEmpty(userId)) return;
 
         var modelRef = dbRef.Child("models").Child(model.modelId);
         var heartedUserRef = modelRef.Child("heartedUsers").Child(userId);
 
+        // Load current state from Firebase to avoid desync
+        var currentHeartSnap = await modelRef.Child("heartedUsers").Child(userId).GetValueAsync();
+        bool isCurrentlyHearted = currentHeartSnap.Exists && currentHeartSnap.Value.ToString() == "true";
+
         var heartCountSnap = await modelRef.Child("heartCount").GetValueAsync();
         model.heartCount = 0;
         if (heartCountSnap.Exists) int.TryParse(heartCountSnap.Value.ToString(), out model.heartCount);
 
-        if (model.hasHearted)
+        if (isCurrentlyHearted)
         {
-            // Unheart
-            model.heartCount = Mathf.Max(0, model.heartCount - 1);
-            model.hasHearted = false;
+            model.heartCount = Mathf.Max(model.heartCount - 1, 0);
             await heartedUserRef.RemoveValueAsync();
+            model.hasHearted = false;
         }
         else
         {
-            // Heart
             model.heartCount += 1;
-            model.hasHearted = true;
             await heartedUserRef.SetValueAsync(true);
+            model.hasHearted = true;
         }
 
-        // Save updated count
         await modelRef.Child("heartCount").SetValueAsync(model.heartCount);
-
-        // Update UI
         model.heartCountText.text = model.heartCount.ToString();
+
         UpdateHeartUI(model);
 
-        // Navigate to canvas
+        // Navigate to corresponding canvas
         if (userHomeCanvas != null) userHomeCanvas.SetActive(false);
         if (model.propertyDetailsCanvas != null) model.propertyDetailsCanvas.SetActive(true);
     }
 
-    private void UpdateHeartUI(LancrisModel model)
+    private void UpdateHeartUI(TreelaneModel model)
     {
         Image heartImage = model.heartButton.GetComponent<Image>();
         if (heartImage != null)
