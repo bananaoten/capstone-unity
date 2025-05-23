@@ -1,10 +1,12 @@
 using UnityEngine;
+using Firebase;
 using Firebase.Auth;
 using Firebase.Database;
 using TMPro;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 public class MessageListener : MonoBehaviour
 {
@@ -17,21 +19,37 @@ public class MessageListener : MonoBehaviour
     private ScrollRect scrollRect;
     private bool isListening = false;
 
-    void Start()
+    async void Start()
     {
         scrollRect = contentPanel.parent.parent.GetComponent<ScrollRect>();
 
-        if (FirebaseAuth.DefaultInstance.CurrentUser != null)
-        {
-            SubscribeToCurrentUser();
-        }
+        // Wait for Firebase dependencies before calling any Firebase APIs
+        var dependencyStatus = await FirebaseApp.CheckAndFixDependenciesAsync();
 
-        FirebaseAuth.DefaultInstance.StateChanged += HandleAuthStateChanged;
+        if (dependencyStatus == DependencyStatus.Available)
+        {
+            Debug.Log("Firebase dependencies are available.");
+
+            if (FirebaseAuth.DefaultInstance.CurrentUser != null)
+            {
+                SubscribeToCurrentUser();
+            }
+
+            FirebaseAuth.DefaultInstance.StateChanged += HandleAuthStateChanged;
+        }
+        else
+        {
+            Debug.LogError($"Could not resolve all Firebase dependencies: {dependencyStatus}");
+            // Handle dependency error accordingly (e.g. show error UI)
+        }
     }
 
     void OnDestroy()
     {
-        FirebaseAuth.DefaultInstance.StateChanged -= HandleAuthStateChanged;
+        if (FirebaseAuth.DefaultInstance != null)
+        {
+            FirebaseAuth.DefaultInstance.StateChanged -= HandleAuthStateChanged;
+        }
         if (msgRef != null)
         {
             msgRef.ChildAdded -= HandleNewMessage;

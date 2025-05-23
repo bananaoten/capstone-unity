@@ -5,6 +5,7 @@ using Firebase;
 using Firebase.Auth;
 using Firebase.Extensions;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 public class AuthManager : MonoBehaviour
 {
@@ -30,23 +31,22 @@ public class AuthManager : MonoBehaviour
 
     private FirebaseAuth auth;
 
-    void Start()
+    async void Start()
     {
         loginErrorText.text = "";
         signUpErrorText.text = "";
 
-        FirebaseApp.CheckAndFixDependenciesAsync().ContinueWithOnMainThread(task =>
+        var dependencyStatus = await FirebaseApp.CheckAndFixDependenciesAsync();
+        if (dependencyStatus == DependencyStatus.Available)
         {
-            if (task.Result == DependencyStatus.Available)
-            {
-                auth = FirebaseAuth.DefaultInstance;
-                Debug.Log("Firebase initialized.");
-            }
-            else
-            {
-                Debug.LogError("Firebase init failed: " + task.Result);
-            }
-        });
+            auth = FirebaseAuth.DefaultInstance;
+            Debug.Log("Firebase initialized.");
+        }
+        else
+        {
+            Debug.LogError("Could not resolve all Firebase dependencies: " + dependencyStatus);
+            loginErrorText.text = "Firebase initialization failed. Check console for details.";
+        }
     }
 
     public void OnLogin()
@@ -63,6 +63,12 @@ public class AuthManager : MonoBehaviour
         if (string.IsNullOrEmpty(password))
         {
             loginErrorText.text = "Password cannot be empty.";
+            return;
+        }
+
+        if (auth == null)
+        {
+            loginErrorText.text = "Firebase not initialized yet.";
             return;
         }
 
@@ -118,6 +124,12 @@ public class AuthManager : MonoBehaviour
             return;
         }
 
+        if (auth == null)
+        {
+            signUpErrorText.text = "Firebase not initialized yet.";
+            return;
+        }
+
         auth.CreateUserWithEmailAndPasswordAsync(email, password).ContinueWithOnMainThread(task =>
         {
             if (task.IsCanceled || task.IsFaulted)
@@ -140,47 +152,43 @@ public class AuthManager : MonoBehaviour
         return Regex.IsMatch(email, pattern);
     }
 
-   private string GetErrorMessage(System.AggregateException exception)
-{
-    if (exception == null) return "An unknown error occurred.";
-
-    foreach (var e in exception.InnerExceptions)
+    private string GetErrorMessage(System.AggregateException exception)
     {
-        if (e is FirebaseException firebaseEx)
+        if (exception == null) return "An unknown error occurred.";
+
+        foreach (var e in exception.InnerExceptions)
         {
-            switch ((Firebase.Auth.AuthError)firebaseEx.ErrorCode)
+            if (e is FirebaseException firebaseEx)
             {
-                case Firebase.Auth.AuthError.InvalidEmail:
-                    return "Invalid email address format.";
-                case Firebase.Auth.AuthError.WrongPassword:
-                case Firebase.Auth.AuthError.UserNotFound:
-                    return "Incorrect email or password.";
-                case Firebase.Auth.AuthError.UserDisabled:
-                    return "Your account has been disabled.";
-                case Firebase.Auth.AuthError.WeakPassword:
-                    return "Password is too weak.";
-                case Firebase.Auth.AuthError.EmailAlreadyInUse:
-                    return "Email is already in use.";
-                default:
-                    break; // Fall through to default message
+                switch ((Firebase.Auth.AuthError)firebaseEx.ErrorCode)
+                {
+                    case Firebase.Auth.AuthError.InvalidEmail:
+                        return "Invalid email address format.";
+                    case Firebase.Auth.AuthError.WrongPassword:
+                    case Firebase.Auth.AuthError.UserNotFound:
+                        return "Incorrect email or password.";
+                    case Firebase.Auth.AuthError.UserDisabled:
+                        return "Your account has been disabled.";
+                    case Firebase.Auth.AuthError.WeakPassword:
+                        return "Password is too weak.";
+                    case Firebase.Auth.AuthError.EmailAlreadyInUse:
+                        return "Email is already in use.";
+                    default:
+                        break;
+                }
             }
         }
+
+        return "Incorrect email or password.";
     }
-
-    // Fallback: don't say internal error — show friendly message
-    return "Incorrect email or password.";
-}
-
-
 
     public void Logout()
     {
         if (auth != null)
         {
-            auth.SignOut();  // Sign out from Firebase
+            auth.SignOut();
         }
 
-        // Hide user-specific UI and show the landing/login page
         userHomeCanvas.SetActive(false);
         signUpCanvas.SetActive(false);
         signupSetupLandingCanvas.SetActive(false);

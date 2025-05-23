@@ -14,6 +14,30 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/VR Mode.unity
     guid: 0967db7ca00bbad4eb303e04367e3009
+  - enabled: 1
+    path: Assets/Scenes/VR Mode Lancris Middle.unity
+    guid: 03f41df86ab34fa46b4b1586a167b26c
+  - enabled: 1
+    path: Assets/Scenes/3D Mode Lancris Middle.unity
+    guid: 8c534ee76eecb02499bdcd4a0e42b735
+  - enabled: 1
+    path: Assets/Scenes/3D Mode Lancris Treelane Left.unity
+    guid: 69ffeda32a2436c4790430bddd30eb51
+  - enabled: 1
+    path: Assets/Scenes/VR Mode Treelane Left.unity
+    guid: a7e0726a9e42e6e468f5c015bd738792
+  - enabled: 1
+    path: Assets/Scenes/VR Mode Treelane Middle.unity
+    guid: d7a7d32369c08c84c9f79a870366fab4
+  - enabled: 1
+    path: Assets/Scenes/3D Mode Lancris Treelane Middle.unity
+    guid: 27e32141bbcdba84a826dbf34f164794
+  - enabled: 1
+    path: Assets/Scenes/3D Mode Lancris Treelane Right.unity
+    guid: 720b9d541834d3a498fa26c9eef6fb72
+  - enabled: 1
+    path: Assets/Scenes/VR Mode Treelane Right.unity
+    guid: de03779ca6d26404bb4c3b8358b494c3
   m_configObjects:
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 97bfb4e79795f944989f2d1336f46771, type: 2}
     com.unity.xr.openxr.settings4: {fileID: 11400000, guid: 3eba38a6b30c18649852d691e2f61dec, type: 2}
