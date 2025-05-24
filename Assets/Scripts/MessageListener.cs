@@ -6,7 +6,6 @@ using TMPro;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 public class MessageListener : MonoBehaviour
 {
@@ -18,47 +17,61 @@ public class MessageListener : MonoBehaviour
     private DatabaseReference msgRef;
     private ScrollRect scrollRect;
     private bool isListening = false;
+    private bool isDestroyed = false;
 
-    async void Start()
+    void Start()
     {
-        scrollRect = contentPanel.parent.parent.GetComponent<ScrollRect>();
-
-        // Wait for Firebase dependencies before calling any Firebase APIs
-        var dependencyStatus = await FirebaseApp.CheckAndFixDependenciesAsync();
-
-        if (dependencyStatus == DependencyStatus.Available)
+        if (contentPanel != null && contentPanel.parent != null && contentPanel.parent.parent != null)
         {
-            Debug.Log("Firebase dependencies are available.");
+            scrollRect = contentPanel.parent.parent.GetComponent<ScrollRect>();
+        }
 
-            if (FirebaseAuth.DefaultInstance.CurrentUser != null)
-            {
-                SubscribeToCurrentUser();
-            }
-
-            FirebaseAuth.DefaultInstance.StateChanged += HandleAuthStateChanged;
+        if (FirebaseInitializer.IsFirebaseReady)
+        {
+            SetupFirebaseListeners();
         }
         else
         {
-            Debug.LogError($"Could not resolve all Firebase dependencies: {dependencyStatus}");
-            // Handle dependency error accordingly (e.g. show error UI)
+            FirebaseInitializer.OnFirebaseReady += SetupFirebaseListeners;
         }
     }
 
     void OnDestroy()
     {
-        if (FirebaseAuth.DefaultInstance != null)
+        isDestroyed = true;
+
+        if (FirebaseInitializer.IsFirebaseReady)
         {
-            FirebaseAuth.DefaultInstance.StateChanged -= HandleAuthStateChanged;
+            FirebaseInitializer.Auth.StateChanged -= HandleAuthStateChanged;
+            if (msgRef != null)
+            {
+                msgRef.ChildAdded -= HandleNewMessage;
+            }
         }
-        if (msgRef != null)
+        else
         {
-            msgRef.ChildAdded -= HandleNewMessage;
+            FirebaseInitializer.OnFirebaseReady -= SetupFirebaseListeners;
+        }
+    }
+
+    private void SetupFirebaseListeners()
+    {
+        if (isDestroyed) return;
+
+        FirebaseInitializer.Auth.StateChanged -= HandleAuthStateChanged;
+        FirebaseInitializer.Auth.StateChanged += HandleAuthStateChanged;
+
+        if (FirebaseInitializer.Auth.CurrentUser != null)
+        {
+            SubscribeToCurrentUser();
         }
     }
 
     private void HandleAuthStateChanged(object sender, System.EventArgs eventArgs)
     {
-        FirebaseUser user = FirebaseAuth.DefaultInstance.CurrentUser;
+        if (isDestroyed) return;
+
+        var user = FirebaseInitializer.Auth.CurrentUser;
         if (user != null && user.UserId != currentUserId)
         {
             SubscribeToCurrentUser();
@@ -67,9 +80,10 @@ public class MessageListener : MonoBehaviour
 
     private void SubscribeToCurrentUser()
     {
-        FirebaseUser user = FirebaseAuth.DefaultInstance.CurrentUser;
-        if (user == null)
-            return;
+        if (isDestroyed) return;
+
+        var user = FirebaseInitializer.Auth.CurrentUser;
+        if (user == null) return;
 
         string newUserId = user.UserId;
 
@@ -80,15 +94,16 @@ public class MessageListener : MonoBehaviour
         }
 
         currentUserId = newUserId;
-        msgRef = FirebaseDatabase.DefaultInstance.GetReference("messages").Child(currentUserId);
+        msgRef = FirebaseInitializer.Database.GetReference("messages").Child(currentUserId);
 
         // Load previous messages
         msgRef.GetValueAsync().ContinueWith(task =>
         {
-            if (task.IsFaulted || task.IsCanceled)
+            if (task.IsFaulted || task.IsCanceled || isDestroyed)
                 return;
 
-            DataSnapshot snapshot = task.Result;
+            var snapshot = task.Result;
+            List<(string from, string text)> messageList = new();
 
             foreach (var child in snapshot.Children)
             {
@@ -98,20 +113,39 @@ public class MessageListener : MonoBehaviour
 
                 string from = data["from"].ToString();
                 string text = data["text"].ToString();
-
-                DisplayMessageLocally(from, text);
+                messageList.Add((from, text));
             }
 
-            StartCoroutine(ScrollToBottomCoroutine());
+            // Pass to Unity main thread
+            StartCoroutine(ShowMessagesRoutine(messageList));
         });
 
         msgRef.ChildAdded += HandleNewMessage;
         isListening = true;
     }
 
+    private IEnumerator ShowMessagesRoutine(List<(string from, string text)> messages)
+    {
+        yield return null;
+
+        if (isDestroyed) yield break;
+
+        foreach (var msg in messages)
+        {
+            DisplayMessageLocally(msg.from, msg.text);
+        }
+
+        yield return new WaitForEndOfFrame();
+        if (!isDestroyed)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(contentPanel.GetComponent<RectTransform>());
+            scrollRect.verticalNormalizedPosition = 0f;
+        }
+    }
+
     private void HandleNewMessage(object sender, ChildChangedEventArgs args)
     {
-        if (args.DatabaseError != null || args.Snapshot?.Value == null)
+        if (isDestroyed || args.DatabaseError != null || args.Snapshot?.Value == null)
             return;
 
         var data = args.Snapshot.Value as Dictionary<string, object>;
@@ -121,30 +155,54 @@ public class MessageListener : MonoBehaviour
         string from = data["from"].ToString();
         string text = data["text"].ToString();
 
-        DisplayMessageLocally(from, text);
-        StartCoroutine(ScrollToBottomCoroutine());
+        if (!isDestroyed)
+        {
+            StartCoroutine(HandleNewMessageRoutine(from, text));
+        }
+    }
+
+    private IEnumerator HandleNewMessageRoutine(string from, string text)
+    {
+        yield return null;
+
+        if (!isDestroyed)
+        {
+            DisplayMessageLocally(from, text);
+            yield return new WaitForEndOfFrame();
+
+            if (scrollRect != null && contentPanel != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(contentPanel.GetComponent<RectTransform>());
+                scrollRect.verticalNormalizedPosition = 0f;
+            }
+        }
     }
 
     public void DisplayMessageLocally(string from, string text)
     {
+        if (isDestroyed || contentPanel == null)
+            return;
+
         GameObject prefabToUse = from == "admin" ? leftMessagePrefab : rightMessagePrefab;
+        if (prefabToUse == null) return;
+
         GameObject bubble = Instantiate(prefabToUse, contentPanel);
         TMP_Text messageText = bubble.GetComponentInChildren<TMP_Text>();
-        messageText.text = text;
-    }
-
-    private IEnumerator ScrollToBottomCoroutine()
-    {
-        yield return new WaitForEndOfFrame();
-        LayoutRebuilder.ForceRebuildLayoutImmediate(contentPanel.GetComponent<RectTransform>());
-        scrollRect.verticalNormalizedPosition = 0f;
+        if (messageText != null)
+        {
+            messageText.text = text;
+        }
     }
 
     private void ClearMessageUI()
     {
+        if (isDestroyed || contentPanel == null)
+            return;
+
         for (int i = contentPanel.childCount - 1; i >= 0; i--)
         {
-            Destroy(contentPanel.GetChild(i).gameObject);
+            if (contentPanel.GetChild(i) != null)
+                Destroy(contentPanel.GetChild(i).gameObject);
         }
     }
 }

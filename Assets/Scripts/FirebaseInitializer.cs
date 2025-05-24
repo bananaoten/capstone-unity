@@ -1,45 +1,35 @@
 using UnityEngine;
 using Firebase;
+using Firebase.Auth;
+using Firebase.Database;
 using System;
 using System.Threading.Tasks;
 
 public class FirebaseInitializer : MonoBehaviour
 {
-    public static FirebaseInitializer Instance { get; private set; }
+    public static FirebaseAuth Auth { get; private set; }
+    public static FirebaseDatabase Database { get; private set; }
+    public static bool IsFirebaseReady { get; private set; } = false;
 
-    // Task completion source to notify others when initialization is done
-    private TaskCompletionSource<bool> initTaskSource = new TaskCompletionSource<bool>();
+    public static event Action OnFirebaseReady;
 
-    // Other scripts can await this task to know when Firebase is initialized
-    public Task<bool> InitializationTask => initTaskSource.Task;
-
-    private void Awake()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-            InitializeFirebase();
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
-    }
-
-    private async void InitializeFirebase()
+    private async void Awake()
     {
         var dependencyStatus = await FirebaseApp.CheckAndFixDependenciesAsync();
-
         if (dependencyStatus == DependencyStatus.Available)
         {
-            Debug.Log("Firebase dependencies are available.");
-            initTaskSource.SetResult(true);
+            Auth = FirebaseAuth.DefaultInstance;
+            Database = FirebaseDatabase.DefaultInstance;
+            IsFirebaseReady = true;
+            Debug.Log("Firebase initialized.");
+
+            OnFirebaseReady?.Invoke();
         }
         else
         {
             Debug.LogError($"Could not resolve all Firebase dependencies: {dependencyStatus}");
-            initTaskSource.SetResult(false);
+            IsFirebaseReady = false;
+            // Optionally, you could retry or handle this case as needed.
         }
     }
 }

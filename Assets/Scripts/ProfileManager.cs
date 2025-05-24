@@ -1,11 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using Firebase;
 using Firebase.Auth;
 using Firebase.Database;
-using Firebase.Extensions;
-using System.Threading.Tasks;
 
 public class ProfileManager : MonoBehaviour
 {
@@ -40,37 +37,43 @@ public class ProfileManager : MonoBehaviour
     private FirebaseAuth auth;
     private bool firebaseReady = false;
 
-    async void Start()
+    void Start()
     {
         SetAllPagesInactive();
 
-        // Show only the landing page at first
-        if (landingPage != null)
-            landingPage.SetActive(true);
+        // Removed landingPage auto-show - call StartProfileFlow manually after login
 
-        var dependencyStatus = await FirebaseApp.CheckAndFixDependenciesAsync();
-        if (dependencyStatus == DependencyStatus.Available)
+        if (FirebaseInitializer.IsFirebaseReady)
         {
-            auth = FirebaseAuth.DefaultInstance;
-            firebaseReady = true;
-
-            if (proceedButton != null)
-                proceedButton.onClick.AddListener(OnProceedButtonClicked);
-
-            if (updateButton != null)
-                updateButton.onClick.AddListener(OnUpdateProfileClicked);
-
-            Debug.Log("Firebase is ready.");
+            InitializeFirebase();
         }
         else
         {
-            Debug.LogError("Could not resolve all Firebase dependencies: " + dependencyStatus);
+            FirebaseInitializer.OnFirebaseReady += InitializeFirebase;
         }
+
+        if (proceedButton != null)
+            proceedButton.onClick.AddListener(OnProceedButtonClicked);
+
+        if (updateButton != null)
+            updateButton.onClick.AddListener(OnUpdateProfileClicked);
+
+        // Load locally saved profile info every time scene starts
+        LoadProfileDataFromLocal();
+    }
+
+    private void InitializeFirebase()
+    {
+        auth = FirebaseAuth.DefaultInstance;
+        firebaseReady = true;
+        Debug.Log("Firebase is ready (ProfileManager).");
+
+        FirebaseInitializer.OnFirebaseReady -= InitializeFirebase;
     }
 
     public void StartProfileFlow()
     {
-        if (auth.CurrentUser == null)
+        if (auth == null || auth.CurrentUser == null)
         {
             Debug.Log("No user logged in.");
             return;
@@ -105,9 +108,15 @@ public class ProfileManager : MonoBehaviour
     public void OnProceedButtonClicked()
     {
         Debug.Log("Proceed button clicked.");
-        if (!firebaseReady || auth.CurrentUser == null)
+        if (!firebaseReady)
         {
             setupValidationText.text = "Please wait... Firebase is not ready.";
+            return;
+        }
+
+        if (auth.CurrentUser == null)
+        {
+            setupValidationText.text = "User not logged in.";
             return;
         }
 
@@ -161,10 +170,14 @@ public class ProfileManager : MonoBehaviour
 
         try
         {
-            DatabaseReference reference = FirebaseDatabase.DefaultInstance.RootReference;
+            var reference = FirebaseDatabase.DefaultInstance.RootReference;
             await reference.Child("users").Child(userId).Child("profile").SetRawJsonValueAsync(json);
 
             PlayerPrefs.SetInt("ProfileCompleted", 1);
+
+            // Save locally for persistence between scenes
+            SaveProfileDataToLocal(profileData);
+
             PlayerPrefs.Save();
 
             ShowWelcomePage();
@@ -179,7 +192,7 @@ public class ProfileManager : MonoBehaviour
 
     public async void LoadProfileData()
     {
-        if (auth.CurrentUser == null)
+        if (auth == null || auth.CurrentUser == null)
         {
             Debug.LogError("User not logged in.");
             return;
@@ -189,8 +202,8 @@ public class ProfileManager : MonoBehaviour
 
         try
         {
-            DatabaseReference reference = FirebaseDatabase.DefaultInstance.RootReference;
-            DataSnapshot snapshot = await reference.Child("users").Child(userId).Child("profile").GetValueAsync();
+            var reference = FirebaseDatabase.DefaultInstance.RootReference;
+            var snapshot = await reference.Child("users").Child(userId).Child("profile").GetValueAsync();
 
             if (snapshot.Exists)
             {
@@ -200,6 +213,9 @@ public class ProfileManager : MonoBehaviour
                 fullNameText.text = data.FullName;
                 contactNumberText.text = data.ContactNumber;
                 updateFullNameInput.text = data.FullName;
+
+                // Save locally for persistence between scenes
+                SaveProfileDataToLocal(data);
             }
         }
         catch (System.Exception ex)
@@ -248,7 +264,7 @@ public class ProfileManager : MonoBehaviour
             return;
         }
 
-        var credential = EmailAuthProvider.GetCredential(user.Email, oldPassword);
+        var credential = Firebase.Auth.EmailAuthProvider.GetCredential(user.Email, oldPassword);
 
         try
         {
@@ -280,6 +296,9 @@ public class ProfileManager : MonoBehaviour
             fullNameText.text = fullName;
             updateFullNameInput.text = fullName;
 
+            // Save locally
+            SaveProfileDataToLocal(profileUpdate);
+
             updateValidationText.color = Color.green;
             updateValidationText.text = "Profile updated successfully!";
         }
@@ -304,6 +323,32 @@ public class ProfileManager : MonoBehaviour
         if (profileSetupPage != null) profileSetupPage.SetActive(false);
         if (profilePage != null) profilePage.SetActive(false);
         if (welcomePage != null) welcomePage.SetActive(false);
+    }
+
+    // Save profile data locally in PlayerPrefs for persistence between scenes
+    private void SaveProfileDataToLocal(UserProfileData data)
+    {
+        PlayerPrefs.SetString("FullName", data.FullName);
+        PlayerPrefs.SetString("ContactNumber", data.ContactNumber);
+        PlayerPrefs.Save();
+    }
+
+    // Load profile data from PlayerPrefs and update UI
+    private void LoadProfileDataFromLocal()
+    {
+        string fullName = PlayerPrefs.GetString("FullName", "");
+        string contactNumber = PlayerPrefs.GetString("ContactNumber", "");
+
+        if (!string.IsNullOrEmpty(fullName))
+        {
+            fullNameText.text = fullName;
+            updateFullNameInput.text = fullName;
+        }
+
+        if (!string.IsNullOrEmpty(contactNumber))
+        {
+            contactNumberText.text = contactNumber;
+        }
     }
 
     public void LoadAndShowProfileAfterLogin()

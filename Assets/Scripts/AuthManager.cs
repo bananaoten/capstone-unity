@@ -1,11 +1,11 @@
 using UnityEngine;
-using UnityEngine.UI;
+using Firebase;  // For FirebaseException
+
 using TMPro;
-using Firebase;
 using Firebase.Auth;
 using Firebase.Extensions;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using System.Collections;
 
 public class AuthManager : MonoBehaviour
 {
@@ -27,26 +27,14 @@ public class AuthManager : MonoBehaviour
     public GameObject userHomeCanvas;
 
     [Header("Managers")]
-    public ProfileManager profileManager; // Assign in Inspector
+    public ProfileManager profileManager;
 
-    private FirebaseAuth auth;
+    private FirebaseAuth auth => FirebaseInitializer.Auth;
 
-    async void Start()
+    void Start()
     {
         loginErrorText.text = "";
         signUpErrorText.text = "";
-
-        var dependencyStatus = await FirebaseApp.CheckAndFixDependenciesAsync();
-        if (dependencyStatus == DependencyStatus.Available)
-        {
-            auth = FirebaseAuth.DefaultInstance;
-            Debug.Log("Firebase initialized.");
-        }
-        else
-        {
-            Debug.LogError("Could not resolve all Firebase dependencies: " + dependencyStatus);
-            loginErrorText.text = "Firebase initialization failed. Check console for details.";
-        }
     }
 
     public void OnLogin()
@@ -66,9 +54,10 @@ public class AuthManager : MonoBehaviour
             return;
         }
 
-        if (auth == null)
+        if (!FirebaseInitializer.IsFirebaseReady || auth == null)
         {
-            loginErrorText.text = "Firebase not initialized yet.";
+            loginErrorText.text = "Initializing Firebase, please wait...";
+            StartCoroutine(RetryAfterDelay(() => OnLogin(), 1f));  // Retry after 1 second
             return;
         }
 
@@ -86,7 +75,6 @@ public class AuthManager : MonoBehaviour
             loginCanvas.SetActive(false);
             userHomeCanvas.SetActive(true);
 
-            // Load and show profile after login
             if (profileManager != null)
             {
                 profileManager.LoadAndShowProfileAfterLogin();
@@ -124,9 +112,10 @@ public class AuthManager : MonoBehaviour
             return;
         }
 
-        if (auth == null)
+        if (!FirebaseInitializer.IsFirebaseReady || auth == null)
         {
-            signUpErrorText.text = "Firebase not initialized yet.";
+            signUpErrorText.text = "Initializing Firebase, please wait...";
+            StartCoroutine(RetryAfterDelay(() => OnSignUp(), 1f));  // Retry after 1 second
             return;
         }
 
@@ -144,6 +133,12 @@ public class AuthManager : MonoBehaviour
             signUpCanvas.SetActive(false);
             signupSetupLandingCanvas.SetActive(true);
         });
+    }
+
+    private IEnumerator RetryAfterDelay(System.Action action, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        action?.Invoke();
     }
 
     private bool IsValidEmail(string email)

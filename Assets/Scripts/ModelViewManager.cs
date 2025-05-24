@@ -19,27 +19,36 @@ public class ModelViewManager : MonoBehaviour
 
     async void Start()
     {
-        var dependencyStatus = await Firebase.FirebaseApp.CheckAndFixDependenciesAsync();
-        if (dependencyStatus == Firebase.DependencyStatus.Available)
+        if (FirebaseInitializer.IsFirebaseReady)
         {
-            auth = FirebaseAuth.DefaultInstance;
-            dbReference = FirebaseDatabase.DefaultInstance.RootReference;
-
-            if (auth.CurrentUser != null)
-            {
-                Debug.Log("Firebase and user ready.");
-
-                LoadViewCount("lancriscorner", viewTextCorner);
-                LoadViewCount("lancrismiddle", viewTextMiddle);
-            }
-            else
-            {
-                Debug.LogWarning("No user signed in.");
-            }
+            InitializeFirebase();
+            await LoadInitialViewCounts();
         }
         else
         {
-            Debug.LogError("Could not resolve Firebase dependencies: " + dependencyStatus);
+            FirebaseInitializer.OnFirebaseReady += OnFirebaseReady;
+        }
+    }
+
+    private async void OnFirebaseReady()
+    {
+        FirebaseInitializer.OnFirebaseReady -= OnFirebaseReady;
+        InitializeFirebase();
+        await LoadInitialViewCounts();
+    }
+
+    private void InitializeFirebase()
+    {
+        auth = FirebaseInitializer.Auth;
+        dbReference = FirebaseInitializer.Database.RootReference;
+
+        if (auth.CurrentUser == null)
+        {
+            Debug.LogWarning("No user signed in.");
+        }
+        else
+        {
+            Debug.Log("Firebase and user ready.");
         }
     }
 
@@ -61,7 +70,7 @@ public class ModelViewManager : MonoBehaviour
     {
         var modelRef = dbReference.Child("models").Child(modelId).Child("views");
 
-        DataSnapshot snapshot = await modelRef.GetValueAsync();
+        var snapshot = await modelRef.GetValueAsync();
 
         int currentViews = 0;
         if (snapshot.Exists && int.TryParse(snapshot.Value.ToString(), out int parsedViews))
@@ -76,16 +85,22 @@ public class ModelViewManager : MonoBehaviour
             viewText.text = $"Views: {currentViews}";
     }
 
-    private async void LoadViewCount(string modelId, TMP_Text viewText)
+    private async Task LoadViewCount(string modelId, TMP_Text viewText)
     {
         var modelRef = dbReference.Child("models").Child(modelId).Child("views");
 
-        DataSnapshot snapshot = await modelRef.GetValueAsync();
+        var snapshot = await modelRef.GetValueAsync();
 
         if (snapshot.Exists && int.TryParse(snapshot.Value.ToString(), out int views))
         {
             if (viewText != null)
                 viewText.text = $"Views: {views}";
         }
+    }
+
+    private async Task LoadInitialViewCounts()
+    {
+        await LoadViewCount("lancriscorner", viewTextCorner);
+        await LoadViewCount("lancrismiddle", viewTextMiddle);
     }
 }

@@ -16,32 +16,30 @@ public class TreelaneModelViewManager : MonoBehaviour
     public TMP_Text viewTextMiddle;
     public TMP_Text viewTextRight;
 
-    private DatabaseReference dbReference;
-    private FirebaseAuth auth;
-
-    async void Start()
+    private void Start()
     {
-        var dependencyStatus = await Firebase.FirebaseApp.CheckAndFixDependenciesAsync();
-        if (dependencyStatus == Firebase.DependencyStatus.Available)
+        if (FirebaseInitializer.IsFirebaseReady)
         {
-            auth = FirebaseAuth.DefaultInstance;
-            dbReference = FirebaseDatabase.DefaultInstance.RootReference;
-
-            if (auth.CurrentUser != null)
-            {
-                Debug.Log("Firebase and user ready.");
-                LoadViewCount("treelanecornerleft", viewTextLeft);
-                LoadViewCount("treelanemiddle", viewTextMiddle);
-                LoadViewCount("treelanecornerright", viewTextRight);
-            }
-            else
-            {
-                Debug.LogWarning("No user signed in.");
-            }
+            Initialize();
         }
         else
         {
-            Debug.LogError("Could not resolve Firebase dependencies: " + dependencyStatus);
+            FirebaseInitializer.OnFirebaseReady += Initialize;
+        }
+    }
+
+    private void Initialize()
+    {
+        if (FirebaseInitializer.Auth.CurrentUser != null)
+        {
+            Debug.Log("Firebase and user ready.");
+            LoadViewCount("treelanecornerleft", viewTextLeft);
+            LoadViewCount("treelanemiddle", viewTextMiddle);
+            LoadViewCount("treelanecornerright", viewTextRight);
+        }
+        else
+        {
+            Debug.LogWarning("No user signed in.");
         }
     }
 
@@ -68,7 +66,7 @@ public class TreelaneModelViewManager : MonoBehaviour
 
     private async Task IncrementViewCount(string modelId, TMP_Text viewText)
     {
-        var modelRef = dbReference.Child("models").Child(modelId).Child("views");
+        var modelRef = FirebaseInitializer.Database.RootReference.Child("models").Child(modelId).Child("views");
 
         DataSnapshot snapshot = await modelRef.GetValueAsync();
 
@@ -87,7 +85,7 @@ public class TreelaneModelViewManager : MonoBehaviour
 
     private async void LoadViewCount(string modelId, TMP_Text viewText)
     {
-        var modelRef = dbReference.Child("models").Child(modelId).Child("views");
+        var modelRef = FirebaseInitializer.Database.RootReference.Child("models").Child(modelId).Child("views");
 
         DataSnapshot snapshot = await modelRef.GetValueAsync();
 
