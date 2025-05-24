@@ -6,7 +6,7 @@ public class PlayerMove : MonoBehaviour
 {
     
     public FixedJoystick joystick;
-    public float SpeedMove = 5f;
+    public float SpeedMove = 2f;
     private CharacterController controller;
     void Start()
     {
