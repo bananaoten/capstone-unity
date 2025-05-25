@@ -1,76 +1,51 @@
 using UnityEngine;
 using UnityEngine.UI;
-using System.Collections;
+using System.Collections.Generic;
 
 public class SlideshowManager : MonoBehaviour
 {
-    public Sprite[] slideshowImages;       // Sprites to display
-    public Image displayImage;             // The main UI Image component
-    public float slideDuration = 0.4f;     // Duration of the slide animation
+    public List<Sprite> slideSprites; // List of sprites to display
+    public Image displayImage;        // The UI Image that shows the current slide
 
-    private int currentIndex = 0;
-    private bool isSliding = false;
+    public Button nextButton;
+    public Button previousButton;
+
+    private int currentSlideIndex = 0;
 
     void Start()
     {
-        displayImage.sprite = slideshowImages[currentIndex];
+        ShowSlide(currentSlideIndex);
+        nextButton.onClick.AddListener(ShowNextSlide);
+        previousButton.onClick.AddListener(ShowPreviousSlide);
     }
 
-    public void ShowNext()
+    void ShowSlide(int index)
     {
-        if (isSliding) return;
+        if (slideSprites.Count == 0 || displayImage == null)
+            return;
 
-        int nextIndex = (currentIndex + 1) % slideshowImages.Length;
-        StartCoroutine(SlideToImage(nextIndex, -1));
+        displayImage.sprite = slideSprites[index];
+
+        // Optional: Disable buttons at ends
+        previousButton.interactable = index > 0;
+        nextButton.interactable = index < slideSprites.Count - 1;
     }
 
-    public void ShowPrevious()
+    void ShowNextSlide()
     {
-        if (isSliding) return;
-
-        int prevIndex = (currentIndex - 1 + slideshowImages.Length) % slideshowImages.Length;
-        StartCoroutine(SlideToImage(prevIndex, 1));
-    }
-
-    IEnumerator SlideToImage(int newIndex, int direction)
-    {
-        isSliding = true;
-
-        float width = ((RectTransform)displayImage.transform).rect.width;
-        Vector2 startPos = displayImage.rectTransform.anchoredPosition;
-        Vector2 endPos = startPos + new Vector2(-direction * width, 0);
-
-        // Create temporary image object
-        GameObject tempGO = new GameObject("TempImage", typeof(Image));
-        tempGO.transform.SetParent(displayImage.transform.parent, false);
-        Image tempImage = tempGO.GetComponent<Image>();
-        RectTransform tempRect = tempImage.rectTransform;
-
-        tempImage.sprite = slideshowImages[newIndex];
-        tempImage.preserveAspect = true;
-
-        tempRect.anchorMin = tempRect.anchorMax = new Vector2(0.5f, 0.5f);
-        tempRect.pivot = new Vector2(0.5f, 0.5f);
-        tempRect.sizeDelta = displayImage.rectTransform.sizeDelta;
-        tempRect.anchoredPosition = startPos + new Vector2(direction * width, 0);
-
-        float elapsed = 0f;
-
-        while (elapsed < slideDuration)
+        if (currentSlideIndex < slideSprites.Count - 1)
         {
-            elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / slideDuration);
-
-            displayImage.rectTransform.anchoredPosition = Vector2.Lerp(startPos, endPos, t);
-            tempRect.anchoredPosition = Vector2.Lerp(tempRect.anchoredPosition, startPos, t);
-            yield return null;
+            currentSlideIndex++;
+            ShowSlide(currentSlideIndex);
         }
+    }
 
-        // Finalize
-        displayImage.sprite = slideshowImages[newIndex];
-        displayImage.rectTransform.anchoredPosition = startPos;
-        Destroy(tempGO);
-        currentIndex = newIndex;
-        isSliding = false;
+    void ShowPreviousSlide()
+    {
+        if (currentSlideIndex > 0)
+        {
+            currentSlideIndex--;
+            ShowSlide(currentSlideIndex);
+        }
     }
 }
