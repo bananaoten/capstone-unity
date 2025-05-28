@@ -123,94 +123,148 @@ public class PrincipalBuyerForm : MonoBehaviour
 
     private DatabaseReference dbReference;
 
-    void Start()
+void Start()
+{
+    Debug.Log("PrincipalBuyerForm Start() called.");
+
+    if (submitButton == null)
     {
-        dbReference = FirebaseDatabase.DefaultInstance.RootReference;
-        submitButton.onClick.AddListener(SubmitToFirebase);
+        Debug.LogError("submitButton is NULL!");
+        return;
     }
 
-    void SubmitToFirebase()
+    if (FirebaseInitializer.IsFirebaseReady)
     {
-        if (!ValidateForm()) return;
+        Debug.Log("Firebase already ready. Initializing form.");
+        InitForm();
+    }
+    else
+    {
+        Debug.Log("Waiting for Firebase to be ready...");
+        FirebaseInitializer.OnFirebaseReady += InitForm;
+    }
+}
 
-        Dictionary<string, object> buyerData = SerializeBuyerInfo(principalBuyerInfo);
+private void InitForm()
+{
+    Debug.Log("InitForm called.");
+    dbReference = FirebaseInitializer.Database.RootReference;
 
-        if (principalBuyerInfo.civilStatus.options[principalBuyerInfo.civilStatus.value].text == "Married")
-        {
-            buyerData["spouseInfo"] = SerializeSpouseInfo(spouseInfo);
-        }
+    // Avoid adding multiple listeners
+    submitButton.onClick.RemoveAllListeners();
+    submitButton.onClick.AddListener(SubmitToFirebase);
 
+    Debug.Log("submitButton listener added and dbReference assigned.");
+}
+
+
+
+void SubmitToFirebase()
+{
+    Debug.Log("SubmitToFirebase called");
+
+    if (!ValidateForm())
+    {
+        Debug.Log("Validation failed");
+        return;
+    }
+
+    Debug.Log("Validation passed, preparing to submit.");
+
+    Dictionary<string, object> buyerData = SerializeBuyerInfo(principalBuyerInfo);
+
+    // Principal Buyer's Spouse Info
+    if (principalBuyerInfo.civilStatus.options[principalBuyerInfo.civilStatus.value].text == "Married")
+    {
+        buyerData["spouseInfo"] = SerializeSpouseInfo(spouseInfo);
+    }
+
+    // Principal Buyer’s Attorney-in-Fact
+    if (IsAttorneyInfoFilled(attorneyInfo))
+    {
         buyerData["attorneyInfo"] = SerializeAttorney(attorneyInfo);
-        buyerData["characterReferences"] = SerializeCharacterReferences(characterReferences);
-        buyerData["marketingDepartment"] = SerializeMarketing(marketingInfo);
+    }
 
-        // Check if any co-borrower fields are filled to determine if co-borrower data should be included
-        bool isCoBorrowerFilled = IsPrincipalBuyerInfoFilled(coBorrowerInfo.coBorrower);
+    // Principal Buyer’s Character References
+    List<Dictionary<string, object>> characterRefList = SerializeCharacterReferences(characterReferences);
+    if (characterRefList.Count > 0)
+    {
+        buyerData["characterReferences"] = characterRefList;
+    }
 
-        if (isCoBorrowerFilled)
+    // Marketing Info
+    buyerData["marketingDepartment"] = SerializeMarketing(marketingInfo);
+
+    // Co-Borrower Info
+    bool isCoBorrowerFilled = IsPrincipalBuyerInfoFilled(coBorrowerInfo.coBorrower);
+    if (isCoBorrowerFilled)
+    {
+        Dictionary<string, object> coBorrowerData = SerializeBuyerInfo(coBorrowerInfo.coBorrower);
+
+        // Co-Borrower's Spouse Info
+        if (coBorrowerInfo.coBorrower.civilStatus.options[coBorrowerInfo.coBorrower.civilStatus.value].text == "Married")
         {
-            Dictionary<string, object> coBorrowerData = SerializeBuyerInfo(coBorrowerInfo.coBorrower);
-
-            if (coBorrowerInfo.coBorrower.civilStatus.options[coBorrowerInfo.coBorrower.civilStatus.value].text == "Married")
-            {
-                coBorrowerData["spouse"] = SerializeSpouseInfo(coBorrowerInfo.coBorrowerSpouse);
-            }
-
-            // Attorney and Character References for Co-Borrower only if filled
-            bool isCoBorrowerAttorneyFilled = IsAttorneyInfoFilled(coBorrowerInfo.coBorrowerAttorney);
-            if (isCoBorrowerAttorneyFilled)
-            {
-                coBorrowerData["attorney"] = SerializeAttorney(coBorrowerInfo.coBorrowerAttorney);
-            }
-            
-            List<Dictionary<string, object>> coBorrowerCharacterRefs = SerializeCharacterReferences(coBorrowerInfo.coBorrowerCharacterReferences);
-            if (coBorrowerCharacterRefs.Count > 0)
-            {
-                coBorrowerData["characterReferences"] = coBorrowerCharacterRefs;
-            }
-
-            buyerData["coBorrowerInfo"] = coBorrowerData;
+            coBorrowerData["spouseInfo"] = SerializeSpouseInfo(coBorrowerInfo.coBorrowerSpouse);
         }
 
-
-        string key = dbReference.Child("principalBuyers").Push().Key;
-        dbReference.Child("principalBuyers").Child(key).SetValueAsync(buyerData).ContinueWithOnMainThread(task =>
+        // Co-Borrower Attorney-in-Fact
+        if (IsAttorneyInfoFilled(coBorrowerInfo.coBorrowerAttorney))
         {
-            feedbackText.text = task.IsCompleted ? "Submission Successful!" : "Error submitting form. Please try again.";
-            feedbackText.color = task.IsCompleted ? Color.green : Color.red;
-            if (task.IsCompleted) StartCoroutine(HideFeedbackAfterSeconds(3));
-        });
+            coBorrowerData["attorneyInfo"] = SerializeAttorney(coBorrowerInfo.coBorrowerAttorney);
+        }
+
+        // Co-Borrower Character References
+        List<Dictionary<string, object>> coBorrowerCharacterRefs = SerializeCharacterReferences(coBorrowerInfo.coBorrowerCharacterReferences);
+        if (coBorrowerCharacterRefs.Count > 0)
+        {
+            coBorrowerData["characterReferences"] = coBorrowerCharacterRefs;
+        }
+
+        buyerData["coBorrowerInfo"] = coBorrowerData;
     }
+
+    string key = dbReference.Child("principalBuyers").Push().Key;
+    dbReference.Child("principalBuyers").Child(key).SetValueAsync(buyerData).ContinueWithOnMainThread(task =>
+    {
+        feedbackText.text = task.IsCompleted ? "Submission Successful!" : "Error submitting form. Please try again.";
+        feedbackText.color = task.IsCompleted ? Color.green : Color.red;
+
+        if (task.IsCompleted)
+        {
+            StartCoroutine(HideFeedbackAfterSeconds(3));
+            ClearFormFields(); // Clear on success
+        }
+    });
+}
+
 
     Dictionary<string, object> SerializeBuyerInfo(PrincipalBuyerInfo info) => new Dictionary<string, object>
-{
-    { "lastName", SafeText(info.lastName) },
-    { "firstName", SafeText(info.firstName) },
-    { "middleName", SafeText(info.middleName) },
-    { "gender", SafeDropdown(info.gender) },
-    { "birthday", SafeText(info.birthday) },
-    { "age", SafeText(info.age) },
-    { "placeOfBirth", SafeText(info.placeOfBirth) },
-    { "civilStatus", SafeDropdown(info.civilStatus) },
-    { "citizenship", SafeText(info.citizenship) },
-    { "religion", SafeText(info.religion) },
-    { "contactNumber", SafeText(info.contactNumber) },
-    { "facebookAccount", SafeText(info.facebookAccount) },
-    { "presentAddress", SafeText(info.presentAddress) },
-    { "permanentAddress", SafeText(info.permanentAddress) },
-    { "employerName", SafeText(info.employerName) },
-    { "businessNature", SafeText(info.businessNature) },
-    { "positionAndDepartment", SafeText(info.positionAndDepartment) },
-    { "employerAddress", SafeText(info.employerAddress) },
-    { "officeTelephone", SafeText(info.officeTelephone) },
-    { "emailAddress", SafeText(info.emailAddress) },
-    { "contactPerson", SafeText(info.contactPerson) },
-    { "tinId", SafeText(info.tinId) },
-    { "pagibigMidNo", string.IsNullOrWhiteSpace(SafeText(info.pagibigMidNo)) ? null : SafeText(info.pagibigMidNo) },
-    { "sourceOfIncome", SafeDropdown(info.sourceOfIncome) }
-
-
-};
+    {
+        { "lastName", SafeText(info.lastName) },
+        { "firstName", SafeText(info.firstName) },
+        { "middleName", SafeText(info.middleName) },
+        { "gender", SafeDropdown(info.gender) },
+        { "birthday", SafeText(info.birthday) },
+        { "age", SafeText(info.age) },
+        { "placeOfBirth", SafeText(info.placeOfBirth) },
+        { "civilStatus", SafeDropdown(info.civilStatus) },
+        { "citizenship", SafeText(info.citizenship) },
+        { "religion", SafeText(info.religion) },
+        { "contactNumber", SafeText(info.contactNumber) },
+        { "facebookAccount", SafeText(info.facebookAccount) },
+        { "presentAddress", SafeText(info.presentAddress) },
+        { "permanentAddress", SafeText(info.permanentAddress) },
+        { "employerName", SafeText(info.employerName) },
+        { "businessNature", SafeText(info.businessNature) },
+        { "positionAndDepartment", SafeText(info.positionAndDepartment) },
+        { "employerAddress", SafeText(info.employerAddress) },
+        { "officeTelephone", SafeText(info.officeTelephone) },
+        { "emailAddress", SafeText(info.emailAddress) },
+        { "contactPerson", SafeText(info.contactPerson) },
+        { "tinId", SafeText(info.tinId) },
+        { "pagibigMidNo", string.IsNullOrWhiteSpace(SafeText(info.pagibigMidNo)) ? null : SafeText(info.pagibigMidNo) },
+        { "sourceOfIncome", SafeDropdown(info.sourceOfIncome) }
+    };
 
     string SafeText(TMP_InputField field)
     {
@@ -221,8 +275,6 @@ public class PrincipalBuyerForm : MonoBehaviour
     {
         return dropdown != null && dropdown.options.Count > dropdown.value ? dropdown.options[dropdown.value].text : "";
     }
-
-
 
     Dictionary<string, object> SerializeSpouseInfo(SpouseInfo info) => new Dictionary<string, object>
     {
@@ -265,7 +317,11 @@ public class PrincipalBuyerForm : MonoBehaviour
         var list = new List<Dictionary<string, object>>();
         foreach (var r in references)
         {
-            bool filled = !string.IsNullOrWhiteSpace(r.lastName.text) || !string.IsNullOrWhiteSpace(r.firstName.text);
+            // Only add to the list if at least one field in the character reference is filled
+            bool filled = !string.IsNullOrWhiteSpace(r.lastName.text) || !string.IsNullOrWhiteSpace(r.firstName.text) ||
+                          !string.IsNullOrWhiteSpace(r.middleName.text) || !string.IsNullOrWhiteSpace(r.contactNumber.text) ||
+                          !string.IsNullOrWhiteSpace(r.facebookAccount.text) || !string.IsNullOrWhiteSpace(r.address.text);
+
             if (filled)
             {
                 list.Add(new Dictionary<string, object>
@@ -371,12 +427,25 @@ public class PrincipalBuyerForm : MonoBehaviour
                !string.IsNullOrWhiteSpace(info.address.text);
     }
 
+    // Helper to check if any field in CharacterReference is filled
+    bool IsCharacterReferenceFilled(CharacterReference reference)
+    {
+        return !string.IsNullOrWhiteSpace(reference.lastName.text) ||
+               !string.IsNullOrWhiteSpace(reference.firstName.text) ||
+               !string.IsNullOrWhiteSpace(reference.middleName.text) ||
+               !string.IsNullOrWhiteSpace(reference.contactNumber.text) ||
+               !string.IsNullOrWhiteSpace(reference.facebookAccount.text) ||
+               !string.IsNullOrWhiteSpace(reference.address.text);
+    }
+
+
     bool ValidateForm()
     {
         // Principal Buyer required fields
         if (!ValidateField("Last Name", principalBuyerInfo.lastName)) return false;
         if (!ValidateField("First Name", principalBuyerInfo.firstName)) return false;
         if (!ValidateField("Middle Name", principalBuyerInfo.middleName)) return false;
+        // ... (other principal buyer validations remain the same) ...
         if (!ValidateField("Birthday", principalBuyerInfo.birthday)) return false;
         if (!ValidateField("Age", principalBuyerInfo.age)) return false;
         if (!ValidateField("Place of Birth", principalBuyerInfo.placeOfBirth)) return false;
@@ -394,6 +463,7 @@ public class PrincipalBuyerForm : MonoBehaviour
         if (!ValidateField("Email Address", principalBuyerInfo.emailAddress)) return false;
         if (!ValidateField("Contact Person", principalBuyerInfo.contactPerson)) return false;
         if (!ValidateField("TIN ID", principalBuyerInfo.tinId)) return false;
+
 
         // Validate Spouse Info if Married
         if (principalBuyerInfo.civilStatus.options[principalBuyerInfo.civilStatus.value].text == "Married")
@@ -433,12 +503,7 @@ public class PrincipalBuyerForm : MonoBehaviour
         for (int i = 0; i < characterReferences.Length; i++)
         {
             var reference = characterReferences[i];
-            bool anyFilled = !string.IsNullOrWhiteSpace(reference.lastName.text) ||
-                             !string.IsNullOrWhiteSpace(reference.firstName.text) ||
-                             !string.IsNullOrWhiteSpace(reference.middleName.text) ||
-                             !string.IsNullOrWhiteSpace(reference.contactNumber.text) ||
-                             !string.IsNullOrWhiteSpace(reference.facebookAccount.text) ||
-                             !string.IsNullOrWhiteSpace(reference.address.text);
+            bool anyFilled = IsCharacterReferenceFilled(reference);
 
             if (anyFilled)
             {
@@ -517,12 +582,7 @@ public class PrincipalBuyerForm : MonoBehaviour
             for (int i = 0; i < coBorrowerInfo.coBorrowerCharacterReferences.Length; i++)
             {
                 var reference = coBorrowerInfo.coBorrowerCharacterReferences[i];
-                bool anyFilled = !string.IsNullOrWhiteSpace(reference.lastName.text) ||
-                                 !string.IsNullOrWhiteSpace(reference.firstName.text) ||
-                                 !string.IsNullOrWhiteSpace(reference.middleName.text) ||
-                                 !string.IsNullOrWhiteSpace(reference.contactNumber.text) ||
-                                 !string.IsNullOrWhiteSpace(reference.facebookAccount.text) ||
-                                 !string.IsNullOrWhiteSpace(reference.address.text);
+                bool anyFilled = IsCharacterReferenceFilled(reference);
 
                 if (anyFilled)
                 {
@@ -536,7 +596,146 @@ public class PrincipalBuyerForm : MonoBehaviour
             }
         }
 
-
         return true;
+    }
+
+    // New method to clear all input fields
+    void ClearFormFields()
+    {
+        // Clear Principal Buyer Info
+        ClearPrincipalBuyerInfo(principalBuyerInfo);
+
+        // Clear Spouse Info if married
+        if (principalBuyerInfo.civilStatus.options[principalBuyerInfo.civilStatus.value].text == "Married")
+        {
+            ClearSpouseInfo(spouseInfo);
+        }
+
+        // Clear Attorney Info
+        ClearAttorneyInfo(attorneyInfo);
+
+        // Clear Character References
+        foreach (var reference in characterReferences)
+        {
+            ClearCharacterReference(reference);
+        }
+
+        // Clear Marketing Info
+        ClearMarketingInfo(marketingInfo);
+
+        // Clear Co-Borrower Info
+        ClearPrincipalBuyerInfo(coBorrowerInfo.coBorrower);
+        // Clear Co-Borrower Spouse Info
+        ClearSpouseInfo(coBorrowerInfo.coBorrowerSpouse);
+        // Clear Co-Borrower Attorney Info
+        ClearAttorneyInfo(coBorrowerInfo.coBorrowerAttorney);
+        // Clear Co-Borrower Character References
+        foreach (var reference in coBorrowerInfo.coBorrowerCharacterReferences)
+        {
+            ClearCharacterReference(reference);
+        }
+
+        // Reset dropdowns to default/first option (assuming 0 is a valid default)
+        principalBuyerInfo.gender.value = 0;
+        principalBuyerInfo.civilStatus.value = 0;
+        principalBuyerInfo.sourceOfIncome.value = 0;
+
+        spouseInfo.gender.value = 0;
+        spouseInfo.civilStatus.value = 0;
+        spouseInfo.sourceOfIncome.value = 0;
+
+        attorneyInfo.gender.value = 0;
+
+        coBorrowerInfo.coBorrower.gender.value = 0;
+        coBorrowerInfo.coBorrower.civilStatus.value = 0;
+        coBorrowerInfo.coBorrower.sourceOfIncome.value = 0;
+
+        coBorrowerInfo.coBorrowerSpouse.gender.value = 0;
+        coBorrowerInfo.coBorrowerSpouse.civilStatus.value = 0;
+        coBorrowerInfo.coBorrowerSpouse.sourceOfIncome.value = 0;
+
+        coBorrowerInfo.coBorrowerAttorney.gender.value = 0;
+    }
+
+    // Helper methods to clear individual sections
+    void ClearPrincipalBuyerInfo(PrincipalBuyerInfo info)
+    {
+        info.lastName.text = "";
+        info.firstName.text = "";
+        info.middleName.text = "";
+        info.birthday.text = "";
+        info.age.text = "";
+        info.placeOfBirth.text = "";
+        info.citizenship.text = "";
+        info.religion.text = "";
+        info.contactNumber.text = "";
+        info.facebookAccount.text = "";
+        info.presentAddress.text = "";
+        info.permanentAddress.text = "";
+        info.employerName.text = "";
+        info.businessNature.text = "";
+        info.positionAndDepartment.text = "";
+        info.employerAddress.text = "";
+        info.officeTelephone.text = "";
+        info.emailAddress.text = "";
+        info.contactPerson.text = "";
+        info.tinId.text = "";
+        info.pagibigMidNo.text = "";
+    }
+
+    void ClearSpouseInfo(SpouseInfo info)
+    {
+        info.lastName.text = "";
+        info.firstName.text = "";
+        info.middleName.text = "";
+        info.birthday.text = "";
+        info.age.text = "";
+        info.placeOfBirth.text = "";
+        info.citizenship.text = "";
+        info.religion.text = "";
+        info.contactNumber.text = "";
+        info.facebookAccount.text = "";
+        info.employerName.text = "";
+        info.businessNature.text = "";
+        info.positionAndDepartment.text = "";
+        info.employerAddress.text = "";
+        info.officeTelephone.text = "";
+        info.emailAddress.text = "";
+        info.contactPerson.text = "";
+        info.tinId.text = "";
+        info.pagibigMidNo.text = "";
+    }
+
+    void ClearAttorneyInfo(AttorneyInFactInfo info)
+    {
+        info.lastName.text = "";
+        info.firstName.text = "";
+        info.middleName.text = "";
+        info.contactInfo.text = "";
+        info.address.text = "";
+    }
+
+    void ClearCharacterReference(CharacterReference reference)
+    {
+        reference.lastName.text = "";
+        reference.firstName.text = "";
+        reference.middleName.text = "";
+        reference.contactNumber.text = "";
+        reference.facebookAccount.text = "";
+        reference.address.text = "";
+    }
+
+    void ClearMarketingInfo(MarketingDepartmentInfo info)
+    {
+        info.subdivisionBlockLot.text = "";
+        info.houseDescription.text = "";
+        info.lotArea.text = "";
+        info.houseArea.text = "";
+        info.totalContractPrice.text = "";
+        info.downPayment.text = "";
+        info.dpTerm.text = "";
+        info.loanAmount.text = "";
+        info.maTerm.text = "";
+        info.monthlyAmortization.text = "";
     }
 }

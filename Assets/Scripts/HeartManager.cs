@@ -83,23 +83,22 @@ public class HeartManager : MonoBehaviour
 
         var modelRef = dbRef.Child("models").Child(model.modelId);
 
-        // Load heart count
         var heartCountSnap = await modelRef.Child("heartCount").GetValueAsync();
         model.heartCount = 0;
         if (heartCountSnap.Exists) int.TryParse(heartCountSnap.Value.ToString(), out model.heartCount);
         model.heartCountText.text = model.heartCount.ToString();
 
-        // Load whether the user has hearted
         var userHeartSnap = await modelRef.Child("heartedUsers").Child(userId).GetValueAsync();
         model.hasHearted = userHeartSnap.Exists && userHeartSnap.Value.ToString() == "true";
 
         UpdateHeartUI(model);
-        model.heartButton.interactable = true;
+        if (model.heartButton != null) model.heartButton.interactable = true;
     }
 
     private async void OnHeartButtonClicked(LancrisModel model)
     {
         if (string.IsNullOrEmpty(userId)) return;
+        if (model.heartButton == null) return;
 
         var modelRef = dbRef.Child("models").Child(model.modelId);
         var heartedUserRef = modelRef.Child("heartedUsers").Child(userId);
@@ -110,34 +109,30 @@ public class HeartManager : MonoBehaviour
 
         if (model.hasHearted)
         {
-            // Unheart
             model.heartCount = Mathf.Max(0, model.heartCount - 1);
             model.hasHearted = false;
             await heartedUserRef.RemoveValueAsync();
         }
         else
         {
-            // Heart
             model.heartCount += 1;
             model.hasHearted = true;
             await heartedUserRef.SetValueAsync(true);
         }
 
-        // Save updated count
         await modelRef.Child("heartCount").SetValueAsync(model.heartCount);
 
-        // Update UI
         model.heartCountText.text = model.heartCount.ToString();
         UpdateHeartUI(model);
 
-        // Navigate to canvas
         if (userHomeCanvas != null) userHomeCanvas.SetActive(false);
         if (model.propertyDetailsCanvas != null) model.propertyDetailsCanvas.SetActive(true);
     }
 
     private void UpdateHeartUI(LancrisModel model)
     {
-        Image heartImage = model.heartButton.GetComponent<Image>();
+        if (model.heartButton == null) return;
+        var heartImage = model.heartButton.GetComponent<Image>();
         if (heartImage != null)
         {
             heartImage.sprite = model.hasHearted ? heartFilledSprite : heartOutlineSprite;
