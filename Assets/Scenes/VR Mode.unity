@@ -1475,7 +1475,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lookTime: 4
-  moveSpeed: 2
+  moveSpeed: 1
   progressImage: {fileID: 1004961259}
   thresholdAngle: 10
 --- !u!1 &390978516
@@ -3302,6 +3302,10 @@ PrefabInstance:
       propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 185d55fbdc4595a4c903b4b37c90d3be, type: 2}
+    - target: {fileID: -4683669308469848369, guid: 3da8cbd7213f04647a4eb5e7de42d58f, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 62444b7dc2eaee048ac43ecdc4214423, type: 2}
     - target: {fileID: 919132149155446097, guid: 3da8cbd7213f04647a4eb5e7de42d58f, type: 3}
       propertyPath: m_Name
       value: langcris_left_new (1)
@@ -4362,7 +4366,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: LANCRIS CORNER
+  m_text: '
+
+'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -5985,7 +5991,7 @@ Transform:
   m_GameObject: {fileID: 1536922800}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 4, z: 4.99}
+  m_LocalPosition: {x: -34, y: 4, z: 4.99}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

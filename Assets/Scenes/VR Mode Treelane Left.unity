@@ -1187,7 +1187,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lookTime: 4
-  moveSpeed: 2
+  moveSpeed: 1
   progressImage: {fileID: 1004961259}
   thresholdAngle: 10
 --- !u!64 &383915452
@@ -3441,7 +3441,7 @@ Transform:
   m_GameObject: {fileID: 1536922800}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 4, z: 4.99}
+  m_LocalPosition: {x: -30.95, y: 4, z: 4.99}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

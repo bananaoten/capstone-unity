@@ -44,13 +44,13 @@ public class AuthManager : MonoBehaviour
 
         if (!IsValidEmail(email))
         {
-            loginErrorText.text = "Invalid email format.";
+            loginErrorText.text = "Incorrect Email or Password.";
             return;
         }
 
         if (string.IsNullOrEmpty(password))
         {
-            loginErrorText.text = "Password cannot be empty.";
+            loginErrorText.text = "Incorrect Email or Password.";
             return;
         }
 

@@ -1917,7 +1917,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_BackGroundColor: {r: 0.6320754, g: 0.7751572, b: 1, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -5329,6 +5329,10 @@ PrefabInstance:
       propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: 185d55fbdc4595a4c903b4b37c90d3be, type: 2}
+    - target: {fileID: -4683669308469848369, guid: 3da8cbd7213f04647a4eb5e7de42d58f, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 62444b7dc2eaee048ac43ecdc4214423, type: 2}
     - target: {fileID: 919132149155446097, guid: 3da8cbd7213f04647a4eb5e7de42d58f, type: 3}
       propertyPath: m_Name
       value: langcris_left_new
