@@ -1,6 +1,5 @@
 using UnityEngine;
 using Firebase;  // For FirebaseException
-
 using TMPro;
 using Firebase.Auth;
 using Firebase.Extensions;
@@ -57,7 +56,7 @@ public class AuthManager : MonoBehaviour
         if (!FirebaseInitializer.IsFirebaseReady || auth == null)
         {
             loginErrorText.text = "Initializing Firebase, please wait...";
-            StartCoroutine(RetryAfterDelay(() => OnLogin(), 1f));  // Retry after 1 second
+            StartCoroutine(RetryAfterDelay(() => OnLogin(), 1f));
             return;
         }
 
@@ -74,6 +73,8 @@ public class AuthManager : MonoBehaviour
 
             loginCanvas.SetActive(false);
             userHomeCanvas.SetActive(true);
+
+            ClearLoginInputs(); // Clear login inputs and messages
 
             if (profileManager != null)
             {
@@ -115,7 +116,7 @@ public class AuthManager : MonoBehaviour
         if (!FirebaseInitializer.IsFirebaseReady || auth == null)
         {
             signUpErrorText.text = "Initializing Firebase, please wait...";
-            StartCoroutine(RetryAfterDelay(() => OnSignUp(), 1f));  // Retry after 1 second
+            StartCoroutine(RetryAfterDelay(() => OnSignUp(), 1f));
             return;
         }
 
@@ -132,6 +133,8 @@ public class AuthManager : MonoBehaviour
 
             signUpCanvas.SetActive(false);
             signupSetupLandingCanvas.SetActive(true);
+
+            ClearSignUpInputs(); // Clear sign-up inputs and messages
         });
     }
 
@@ -188,5 +191,23 @@ public class AuthManager : MonoBehaviour
         signUpCanvas.SetActive(false);
         signupSetupLandingCanvas.SetActive(false);
         loginCanvas.SetActive(true);
+
+        ClearLoginInputs();
+        ClearSignUpInputs();
+    }
+
+    private void ClearLoginInputs()
+    {
+        loginEmailInput.text = "";
+        loginPasswordInput.text = "";
+        loginErrorText.text = "";
+    }
+
+    private void ClearSignUpInputs()
+    {
+        signUpEmailInput.text = "";
+        signUpPasswordInput.text = "";
+        signUpConfirmPasswordInput.text = "";
+        signUpErrorText.text = "";
     }
 }

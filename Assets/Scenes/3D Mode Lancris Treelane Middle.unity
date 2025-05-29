@@ -284,6 +284,7 @@ MonoBehaviour:
   TouchDist: {x: 0, y: 0}
   PointerOld: {x: 0, y: 0}
   Pressed: 0
+  touchScale: 1
 --- !u!64 &131203720
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -1213,7 +1214,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 68a3a8c436b68ea459ad970b21ef2fe1, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 70f08e569a9aae84ea33f8ee8028ebac, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2163,7 +2164,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   PlayerBody: {fileID: 1285100439}
   LockAxis: {x: 0, y: 0}
-  Sensivity: 40
+  Sensivity: 5
 --- !u!1 &847967084
 GameObject:
   m_ObjectHideFlags: 0

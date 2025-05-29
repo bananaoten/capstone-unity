@@ -33,16 +33,32 @@ public class HeartManager : MonoBehaviour
 
     async void Start()
     {
-        auth = FirebaseAuth.DefaultInstance;
-        dbRef = FirebaseDatabase.DefaultInstance.RootReference;
-
-        SetupModel(lancrisCorner);
-        SetupModel(lancrisMiddle);
-
-        await WaitForUserLogin();
+        if (FirebaseInitializer.IsFirebaseReady)
+        {
+            InitializeFirebase();
+            await WaitForUserLoginAndLoad();
+        }
+        else
+        {
+            FirebaseInitializer.OnFirebaseReady += OnFirebaseReady;
+        }
     }
 
-    private async Task WaitForUserLogin()
+    private async void OnFirebaseReady()
+    {
+        FirebaseInitializer.OnFirebaseReady -= OnFirebaseReady;
+        InitializeFirebase();
+        await WaitForUserLoginAndLoad();
+    }
+
+    private void InitializeFirebase()
+    {
+        auth = FirebaseInitializer.Auth;
+        dbRef = FirebaseInitializer.Database.RootReference;
+        Debug.Log("HeartManager Firebase Initialized");
+    }
+
+    private async Task WaitForUserLoginAndLoad()
     {
         int retries = 0;
         while (auth.CurrentUser == null && retries < 50)
@@ -54,11 +70,16 @@ public class HeartManager : MonoBehaviour
         if (auth.CurrentUser != null)
         {
             userId = auth.CurrentUser.UserId;
+            Debug.Log("HeartManager: User logged in: " + userId);
+
+            SetupModel(lancrisCorner);
+            SetupModel(lancrisMiddle);
+
             await LoadAllHeartData();
         }
         else
         {
-            Debug.LogWarning("Firebase user not found.");
+            Debug.LogWarning("HeartManager: Firebase user not found.");
         }
     }
 
@@ -83,22 +104,28 @@ public class HeartManager : MonoBehaviour
 
         var modelRef = dbRef.Child("models").Child(model.modelId);
 
+        // Load heart count
         var heartCountSnap = await modelRef.Child("heartCount").GetValueAsync();
         model.heartCount = 0;
         if (heartCountSnap.Exists) int.TryParse(heartCountSnap.Value.ToString(), out model.heartCount);
         model.heartCountText.text = model.heartCount.ToString();
 
+        // Load user heart state
         var userHeartSnap = await modelRef.Child("heartedUsers").Child(userId).GetValueAsync();
         model.hasHearted = userHeartSnap.Exists && userHeartSnap.Value.ToString() == "true";
 
         UpdateHeartUI(model);
-        if (model.heartButton != null) model.heartButton.interactable = true;
+
+        if (model.heartButton != null)
+        {
+            model.heartButton.interactable = true;
+            Debug.Log($"Heart button for {model.modelId} now interactable");
+        }
     }
 
     private async void OnHeartButtonClicked(LancrisModel model)
     {
-        if (string.IsNullOrEmpty(userId)) return;
-        if (model.heartButton == null) return;
+        if (string.IsNullOrEmpty(userId) || model.heartButton == null) return;
 
         var modelRef = dbRef.Child("models").Child(model.modelId);
         var heartedUserRef = modelRef.Child("heartedUsers").Child(userId);
@@ -125,6 +152,7 @@ public class HeartManager : MonoBehaviour
         model.heartCountText.text = model.heartCount.ToString();
         UpdateHeartUI(model);
 
+        // Toggle canvases
         if (userHomeCanvas != null) userHomeCanvas.SetActive(false);
         if (model.propertyDetailsCanvas != null) model.propertyDetailsCanvas.SetActive(true);
     }
@@ -132,6 +160,7 @@ public class HeartManager : MonoBehaviour
     private void UpdateHeartUI(LancrisModel model)
     {
         if (model.heartButton == null) return;
+
         var heartImage = model.heartButton.GetComponent<Image>();
         if (heartImage != null)
         {
