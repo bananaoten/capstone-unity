@@ -2466,7 +2466,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1766157008}
         m_TargetAssemblyTypeName: GoToMainPortraitLancrisMiddle, Assembly-CSharp
-        m_MethodName: LoadMainPortraitWithLancrisMiddle
+        m_MethodName: ShowFeedbackThenExit
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -5930,6 +5930,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e95f23eebc099c4488608176df95abd4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  feedbackPanelPrefab: {fileID: 5245212194035634115, guid: c4078df997543aa4f8bcdc93862632c0, type: 3}
 --- !u!64 &1808091109
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -6851,7 +6852,7 @@ SceneRoots:
   - {fileID: 1840148395}
   - {fileID: 1648889210}
   - {fileID: 224301738}
-  - {fileID: 1766157007}
   - {fileID: 802168868}
   - {fileID: 1539174830}
   - {fileID: 254680492}
+  - {fileID: 1766157007}

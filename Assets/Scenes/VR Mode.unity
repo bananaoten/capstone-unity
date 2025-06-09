@@ -8184,6 +8184,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f02ba1fde543bcb42a398d39a0742466, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  feedbackPanelPrefab: {fileID: 5245212194035634115, guid: c4078df997543aa4f8bcdc93862632c0, type: 3}
+  modelName: lancriscorner
 --- !u!4 &1431994852
 Transform:
   m_ObjectHideFlags: 0

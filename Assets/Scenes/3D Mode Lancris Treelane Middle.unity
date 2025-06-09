@@ -1184,7 +1184,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1766157008}
         m_TargetAssemblyTypeName: GoToPropertyDetailsTreelaneMiddle, Assembly-CSharp
-        m_MethodName: LoadMainPortraitWithTreelaneMiddle
+        m_MethodName: ShowFeedbackThenExit
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -5154,6 +5154,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d39f6388fd7240c42ab7021879bcde1d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  feedbackPanelPrefab: {fileID: 5245212194035634115, guid: c4078df997543aa4f8bcdc93862632c0, type: 3}
 --- !u!64 &1792072499
 MeshCollider:
   m_ObjectHideFlags: 0

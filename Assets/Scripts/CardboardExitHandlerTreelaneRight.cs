@@ -6,6 +6,11 @@ using System.Collections;
 
 public class CardboardExitHandlerTreelaneRight : MonoBehaviour
 {
+    [Header("Model Name to Pass")]
+    public string modelName = "treleaneright";
+
+    private bool exitInitiated = false;
+
     private void Start()
     {
         StartCoroutine(WaitForXRAndUpdateScreenParams());
@@ -13,28 +18,18 @@ public class CardboardExitHandlerTreelaneRight : MonoBehaviour
 
     IEnumerator WaitForXRAndUpdateScreenParams()
     {
-        // Wait until XR initialization is complete
         yield return new WaitUntil(() => XRGeneralSettings.Instance.Manager.isInitializationComplete);
-
         Api.UpdateScreenParams();
     }
 
     void Update()
     {
-        if (Api.IsCloseButtonPressed)
+        if (Api.IsCloseButtonPressed && !exitInitiated)
         {
+            exitInitiated = true;
             Debug.Log("Exit (X) button pressed. Returning to MainPortraitScene (Treelane Right)...");
 
-            // Set orientation to portrait before scene switch
-            Screen.orientation = ScreenOrientation.Portrait;
-
-            // Save UI state to show Treelane Right canvas on main scene load
-            PlayerPrefs.SetString("ShowUI", "PropertyDetailsTreelaneRight");
-
-            PlayerPrefs.Save();
-
-            // Load MainPortraitScene
-            SceneManager.LoadScene("MainPortraitScene");
+            StartCoroutine(ExitVRAndReturnToMainPortrait());
         }
 
         if (Api.IsGearButtonPressed)
@@ -42,6 +37,22 @@ public class CardboardExitHandlerTreelaneRight : MonoBehaviour
             Debug.Log("Settings (gear) button pressed.");
             Api.ScanDeviceParams();
         }
+    }
+
+    IEnumerator ExitVRAndReturnToMainPortrait()
+    {
+        XRGeneralSettings.Instance.Manager.StopSubsystems();
+        XRGeneralSettings.Instance.Manager.DeinitializeLoader();
+
+        PlayerPrefs.SetString("ShowUI", "PropertyDetailsTreelaneRight");
+        PlayerPrefs.SetInt("ShowFeedback", 1);
+        PlayerPrefs.SetString("FeedbackModelName", modelName);
+        PlayerPrefs.Save();
+
+        Screen.orientation = ScreenOrientation.Portrait;
+        yield return null;
+
+        SceneManager.LoadScene("MainPortraitScene");
     }
 
     void OnApplicationPause(bool pause)

@@ -987,7 +987,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1766157006}
         m_TargetAssemblyTypeName: GoToMainPortrait, Assembly-CSharp
-        m_MethodName: LoadMainPortraitWithPropertyDetails
+        m_MethodName: ShowFeedbackThenExit
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -4432,6 +4432,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 963d6a277093e204b834700bcfb0f3b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  modelName: lancriscorner
 --- !u!4 &1766157007
 Transform:
   m_ObjectHideFlags: 0
@@ -5734,6 +5735,6 @@ SceneRoots:
   - {fileID: 1840148395}
   - {fileID: 1648889210}
   - {fileID: 224301738}
-  - {fileID: 1766157007}
   - {fileID: 1767993409}
   - {fileID: 1969253956}
+  - {fileID: 1766157007}

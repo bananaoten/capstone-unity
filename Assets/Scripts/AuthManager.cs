@@ -5,6 +5,7 @@ using Firebase.Auth;
 using Firebase.Extensions;
 using System.Text.RegularExpressions;
 using System.Collections;
+using UnityEngine.UI; // Needed for Toggle
 
 public class AuthManager : MonoBehaviour
 {
@@ -18,6 +19,10 @@ public class AuthManager : MonoBehaviour
     public TMP_InputField signUpPasswordInput;
     public TMP_InputField signUpConfirmPasswordInput;
     public TextMeshProUGUI signUpErrorText;
+
+    [Header("Terms & Conditions")]
+    public Toggle termsToggle;
+    public TextMeshProUGUI termsErrorText;
 
     [Header("Canvases")]
     public GameObject loginCanvas;
@@ -34,6 +39,7 @@ public class AuthManager : MonoBehaviour
     {
         loginErrorText.text = "";
         signUpErrorText.text = "";
+        if (termsErrorText != null) termsErrorText.text = "";
     }
 
     public void OnLogin()
@@ -41,13 +47,7 @@ public class AuthManager : MonoBehaviour
         string email = loginEmailInput.text.Trim();
         string password = loginPasswordInput.text;
 
-        if (!IsValidEmail(email))
-        {
-            loginErrorText.text = "Incorrect Email or Password.";
-            return;
-        }
-
-        if (string.IsNullOrEmpty(password))
+        if (!IsValidEmail(email) || string.IsNullOrEmpty(password))
         {
             loginErrorText.text = "Incorrect Email or Password.";
             return;
@@ -74,7 +74,7 @@ public class AuthManager : MonoBehaviour
             loginCanvas.SetActive(false);
             userHomeCanvas.SetActive(true);
 
-            ClearLoginInputs(); // Clear login inputs and messages
+            ClearLoginInputs();
 
             if (profileManager != null)
             {
@@ -88,6 +88,9 @@ public class AuthManager : MonoBehaviour
         string email = signUpEmailInput.text.Trim();
         string password = signUpPasswordInput.text;
         string confirmPassword = signUpConfirmPasswordInput.text;
+
+        signUpErrorText.text = "";
+        termsErrorText.text = "";
 
         if (!IsValidEmail(email))
         {
@@ -113,6 +116,12 @@ public class AuthManager : MonoBehaviour
             return;
         }
 
+        if (termsToggle == null || !termsToggle.isOn)
+        {
+            termsErrorText.text = "Terms and Conditions is required.";
+            return;
+        }
+
         if (!FirebaseInitializer.IsFirebaseReady || auth == null)
         {
             signUpErrorText.text = "Initializing Firebase, please wait...";
@@ -134,7 +143,7 @@ public class AuthManager : MonoBehaviour
             signUpCanvas.SetActive(false);
             signupSetupLandingCanvas.SetActive(true);
 
-            ClearSignUpInputs(); // Clear sign-up inputs and messages
+            ClearSignUpInputs();
         });
     }
 
@@ -171,8 +180,6 @@ public class AuthManager : MonoBehaviour
                         return "Password is too weak.";
                     case Firebase.Auth.AuthError.EmailAlreadyInUse:
                         return "Email is already in use.";
-                    default:
-                        break;
                 }
             }
         }
@@ -209,5 +216,11 @@ public class AuthManager : MonoBehaviour
         signUpPasswordInput.text = "";
         signUpConfirmPasswordInput.text = "";
         signUpErrorText.text = "";
+
+        if (termsToggle != null)
+            termsToggle.isOn = false;
+
+        if (termsErrorText != null)
+            termsErrorText.text = "";
     }
 }

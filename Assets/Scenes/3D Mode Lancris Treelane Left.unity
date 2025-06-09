@@ -1309,7 +1309,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1766157008}
         m_TargetAssemblyTypeName: GoToPropertyDetailsTreelaneLeft, Assembly-CSharp
-        m_MethodName: LoadMainPortraitWithTreelaneLeft
+        m_MethodName: ShowFeedbackThenExit
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -4887,6 +4887,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 90ffe312ee342114690c07270f58dac6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  feedbackPanelPrefab: {fileID: 5245212194035634115, guid: c4078df997543aa4f8bcdc93862632c0, type: 3}
 --- !u!1 &1788480482 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3849762623622064168, guid: 20d585a7455246b418fbe9cd2394be1e, type: 3}
@@ -5740,6 +5741,6 @@ SceneRoots:
   - {fileID: 1648889210}
   - {fileID: 224301738}
   - {fileID: 1708984676}
-  - {fileID: 1766157007}
   - {fileID: 681300471}
   - {fileID: 1689436413}
+  - {fileID: 1766157007}

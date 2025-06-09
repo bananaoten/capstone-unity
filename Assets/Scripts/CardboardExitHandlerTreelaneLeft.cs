@@ -6,6 +6,11 @@ using System.Collections;
 
 public class CardboardExitHandlerTreelaneLeft : MonoBehaviour
 {
+    [Header("Model Name to Pass")]
+    public string modelName = "treelaneleft";
+
+    private bool exitInitiated = false;
+
     private void Start()
     {
         StartCoroutine(WaitForXRAndUpdateScreenParams());
@@ -13,28 +18,18 @@ public class CardboardExitHandlerTreelaneLeft : MonoBehaviour
 
     IEnumerator WaitForXRAndUpdateScreenParams()
     {
-        // Wait until XR initialization is complete
         yield return new WaitUntil(() => XRGeneralSettings.Instance.Manager.isInitializationComplete);
-
         Api.UpdateScreenParams();
     }
 
     void Update()
     {
-        if (Api.IsCloseButtonPressed)
+        if (Api.IsCloseButtonPressed && !exitInitiated)
         {
-            Debug.Log("Exit (X) button pressed. Returning to MainPortraitScene (Treelane Left)...");
+            exitInitiated = true;
+            Debug.Log("Exit (X) button pressed. Exiting VR and returning to MainPortraitScene (Treelane Left)...");
 
-            // Set orientation to portrait before scene switch
-            Screen.orientation = ScreenOrientation.Portrait;
-
-            // Save UI state to show Treelane Left canvas on main scene load
-            PlayerPrefs.SetString("ShowUI", "PropertyDetailsTreelaneLeft");
-
-            PlayerPrefs.Save();
-
-            // Load MainPortraitScene
-            SceneManager.LoadScene("MainPortraitScene");
+            StartCoroutine(ExitVRAndReturnToMainPortrait());
         }
 
         if (Api.IsGearButtonPressed)
@@ -42,6 +37,26 @@ public class CardboardExitHandlerTreelaneLeft : MonoBehaviour
             Debug.Log("Settings (gear) button pressed.");
             Api.ScanDeviceParams();
         }
+    }
+
+    IEnumerator ExitVRAndReturnToMainPortrait()
+    {
+        // Stop XR
+        XRGeneralSettings.Instance.Manager.StopSubsystems();
+        XRGeneralSettings.Instance.Manager.DeinitializeLoader();
+
+        // Set UI and feedback flags
+        PlayerPrefs.SetString("ShowUI", "PropertyDetailsTreelaneLeft");
+        PlayerPrefs.SetInt("ShowFeedback", 1);
+        PlayerPrefs.SetString("FeedbackModelName", modelName);
+        PlayerPrefs.Save();
+
+        // Ensure portrait orientation
+        Screen.orientation = ScreenOrientation.Portrait;
+        yield return null;
+
+        // Load main scene
+        SceneManager.LoadScene("MainPortraitScene");
     }
 
     void OnApplicationPause(bool pause)

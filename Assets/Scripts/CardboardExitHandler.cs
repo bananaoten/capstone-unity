@@ -1,11 +1,16 @@
 using UnityEngine;
 using Google.XR.Cardboard;
-using UnityEngine.SceneManagement;
 using UnityEngine.XR.Management;
+using UnityEngine.SceneManagement;
 using System.Collections;
 
 public class CardboardExitHandler : MonoBehaviour
 {
+    [Header("Model Name to Pass")]
+    public string modelName = "lancriscorner";
+
+    private bool exitInitiated = false;
+
     private void Start()
     {
         StartCoroutine(WaitForXRAndUpdateScreenParams());
@@ -13,27 +18,18 @@ public class CardboardExitHandler : MonoBehaviour
 
     IEnumerator WaitForXRAndUpdateScreenParams()
     {
-        // Wait until XR initialization is complete
         yield return new WaitUntil(() => XRGeneralSettings.Instance.Manager.isInitializationComplete);
-
         Api.UpdateScreenParams();
     }
 
     void Update()
     {
-        if (Api.IsCloseButtonPressed)
+        if (Api.IsCloseButtonPressed && !exitInitiated)
         {
-            Debug.Log("Exit (X) button pressed. Returning to MainPortraitScene...");
+            exitInitiated = true;
+            Debug.Log("Exit (X) button pressed. Stopping XR and reloading scene...");
 
-            // Ensure portrait orientation is set before loading the scene
-            Screen.orientation = ScreenOrientation.Portrait;
-
-            // Save the UI state in PlayerPrefs
-            PlayerPrefs.SetString("ShowUI", "PropertyDetails");
-            PlayerPrefs.Save();
-
-            // Load the MainPortraitScene
-            SceneManager.LoadScene("MainPortraitScene");
+            StartCoroutine(ExitVRAndReloadScene());
         }
 
         if (Api.IsGearButtonPressed)
@@ -41,6 +37,30 @@ public class CardboardExitHandler : MonoBehaviour
             Debug.Log("Settings (gear) button pressed.");
             Api.ScanDeviceParams();
         }
+    }
+
+    IEnumerator ExitVRAndReloadScene()
+    {
+        // Stop XR
+        XRGeneralSettings.Instance.Manager.StopSubsystems();
+        XRGeneralSettings.Instance.Manager.DeinitializeLoader();
+
+        // Save feedback data
+        PlayerPrefs.SetInt("ShowFeedback", 1);
+        PlayerPrefs.SetString("FeedbackModelName", modelName);
+        PlayerPrefs.SetString("ShowUI", "PropertyDetails");
+        PlayerPrefs.Save();
+
+        yield return null;
+
+        // Reset to portrait orientation
+        Screen.orientation = ScreenOrientation.Portrait;
+
+        // Delay one more frame for safety
+        yield return null;
+
+        // Load the portrait scene where feedback is shown
+        SceneManager.LoadScene("MainPortraitScene");
     }
 
     void OnApplicationPause(bool pause)

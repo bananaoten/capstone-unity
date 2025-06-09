@@ -3,16 +3,30 @@ using UnityEngine.SceneManagement;
 
 public class GoToMainPortrait : MonoBehaviour
 {
-    public void LoadMainPortraitWithPropertyDetails()
+    [Header("Model Name to Pass to Feedback")]
+    public string modelName = "lancriscorner";
+
+    public void ShowFeedbackThenExit()
     {
-        // Set orientation to portrait BEFORE scene loads
         Screen.orientation = ScreenOrientation.Portrait;
 
-        // Tell the MainPortraitScene to open Property Details
         PlayerPrefs.SetString("ShowUI", "PropertyDetails");
+        PlayerPrefs.SetString("TargetCanvas", "Property Details");
+        PlayerPrefs.SetInt("ShowFeedback", 1);
+        PlayerPrefs.SetString("FeedbackModelName", modelName); // Pass the selected model name
         PlayerPrefs.Save();
 
-        // Load the MainPortraitScene
+        SceneManager.LoadScene("MainPortraitScene");
+    }
+
+    public void LoadMainPortraitWithoutFeedback()
+    {
+        Screen.orientation = ScreenOrientation.Portrait;
+
+        PlayerPrefs.SetString("ShowUI", "PropertyDetails");
+        PlayerPrefs.SetString("TargetCanvas", "Property Details");
+        PlayerPrefs.Save();
+
         SceneManager.LoadScene("MainPortraitScene");
     }
 }
