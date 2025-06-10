@@ -1,7 +1,7 @@
 using UnityEngine;
 using Google.XR.Cardboard;
-using UnityEngine.SceneManagement;
 using UnityEngine.XR.Management;
+using UnityEngine.SceneManagement;
 using System.Collections;
 
 public class CardboardExitHandlerTreelaneLeft : MonoBehaviour
@@ -27,9 +27,9 @@ public class CardboardExitHandlerTreelaneLeft : MonoBehaviour
         if (Api.IsCloseButtonPressed && !exitInitiated)
         {
             exitInitiated = true;
-            Debug.Log("Exit (X) button pressed. Exiting VR and returning to MainPortraitScene (Treelane Left)...");
+            Debug.Log("Exit (X) button pressed. Stopping XR and reloading scene...");
 
-            StartCoroutine(ExitVRAndReturnToMainPortrait());
+            StartCoroutine(ExitVRAndReloadScene());
         }
 
         if (Api.IsGearButtonPressed)
@@ -39,23 +39,28 @@ public class CardboardExitHandlerTreelaneLeft : MonoBehaviour
         }
     }
 
-    IEnumerator ExitVRAndReturnToMainPortrait()
+    IEnumerator ExitVRAndReloadScene()
     {
         // Stop XR
         XRGeneralSettings.Instance.Manager.StopSubsystems();
         XRGeneralSettings.Instance.Manager.DeinitializeLoader();
 
-        // Set UI and feedback flags
-        PlayerPrefs.SetString("ShowUI", "PropertyDetailsTreelaneLeft");
+        // Save feedback data for Treelane Left
         PlayerPrefs.SetInt("ShowFeedback", 1);
         PlayerPrefs.SetString("FeedbackModelName", modelName);
+        PlayerPrefs.SetString("ShowUI", "PropertyDetailsTreelaneLeft");
+        PlayerPrefs.SetString("TargetCanvas", "Property Details Treelane Left");
         PlayerPrefs.Save();
 
-        // Ensure portrait orientation
-        Screen.orientation = ScreenOrientation.Portrait;
         yield return null;
 
-        // Load main scene
+        // Reset to portrait orientation
+        Screen.orientation = ScreenOrientation.Portrait;
+
+        // Delay one more frame for safety
+        yield return null;
+
+        // Load the portrait scene where feedback is shown
         SceneManager.LoadScene("MainPortraitScene");
     }
 

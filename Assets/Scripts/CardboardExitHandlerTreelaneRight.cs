@@ -1,13 +1,13 @@
 using UnityEngine;
 using Google.XR.Cardboard;
-using UnityEngine.SceneManagement;
 using UnityEngine.XR.Management;
+using UnityEngine.SceneManagement;
 using System.Collections;
 
 public class CardboardExitHandlerTreelaneRight : MonoBehaviour
 {
     [Header("Model Name to Pass")]
-    public string modelName = "treleaneright";
+    public string modelName = "treelanecornerright";
 
     private bool exitInitiated = false;
 
@@ -27,9 +27,9 @@ public class CardboardExitHandlerTreelaneRight : MonoBehaviour
         if (Api.IsCloseButtonPressed && !exitInitiated)
         {
             exitInitiated = true;
-            Debug.Log("Exit (X) button pressed. Returning to MainPortraitScene (Treelane Right)...");
+            Debug.Log("Exit (X) button pressed. Stopping XR and reloading scene...");
 
-            StartCoroutine(ExitVRAndReturnToMainPortrait());
+            StartCoroutine(ExitVRAndReloadScene());
         }
 
         if (Api.IsGearButtonPressed)
@@ -39,19 +39,28 @@ public class CardboardExitHandlerTreelaneRight : MonoBehaviour
         }
     }
 
-    IEnumerator ExitVRAndReturnToMainPortrait()
+    IEnumerator ExitVRAndReloadScene()
     {
+        // Stop XR
         XRGeneralSettings.Instance.Manager.StopSubsystems();
         XRGeneralSettings.Instance.Manager.DeinitializeLoader();
 
-        PlayerPrefs.SetString("ShowUI", "PropertyDetailsTreelaneRight");
+        // Save feedback data for Treelane Right
         PlayerPrefs.SetInt("ShowFeedback", 1);
         PlayerPrefs.SetString("FeedbackModelName", modelName);
+        PlayerPrefs.SetString("ShowUI", "PropertyDetailsTreelaneRight");
+        PlayerPrefs.SetString("TargetCanvas", "Property Details Treelane Right");
         PlayerPrefs.Save();
 
-        Screen.orientation = ScreenOrientation.Portrait;
         yield return null;
 
+        // Reset to portrait orientation
+        Screen.orientation = ScreenOrientation.Portrait;
+
+        // Delay one more frame for safety
+        yield return null;
+
+        // Load the portrait scene where feedback is shown
         SceneManager.LoadScene("MainPortraitScene");
     }
 

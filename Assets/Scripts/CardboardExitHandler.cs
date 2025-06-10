@@ -40,28 +40,29 @@ public class CardboardExitHandler : MonoBehaviour
     }
 
     IEnumerator ExitVRAndReloadScene()
-    {
-        // Stop XR
-        XRGeneralSettings.Instance.Manager.StopSubsystems();
-        XRGeneralSettings.Instance.Manager.DeinitializeLoader();
+{
+    // Stop XR
+    XRGeneralSettings.Instance.Manager.StopSubsystems();
+    XRGeneralSettings.Instance.Manager.DeinitializeLoader();
 
-        // Save feedback data
-        PlayerPrefs.SetInt("ShowFeedback", 1);
-        PlayerPrefs.SetString("FeedbackModelName", modelName);
-        PlayerPrefs.SetString("ShowUI", "PropertyDetails");
-        PlayerPrefs.Save();
+    // Save feedback data for Lancris Corner
+    PlayerPrefs.SetInt("ShowFeedback", 1);
+    PlayerPrefs.SetString("FeedbackModelName", modelName);
+    PlayerPrefs.SetString("ShowUI", "PropertyDetails");
+    PlayerPrefs.SetString("TargetCanvas", "Property Details"); // <-- Use the correct canvas name
+    PlayerPrefs.Save();
 
-        yield return null;
+    yield return null;
 
-        // Reset to portrait orientation
-        Screen.orientation = ScreenOrientation.Portrait;
+    // Reset to portrait orientation
+    Screen.orientation = ScreenOrientation.Portrait;
 
-        // Delay one more frame for safety
-        yield return null;
+    // Delay one more frame for safety
+    yield return null;
 
-        // Load the portrait scene where feedback is shown
-        SceneManager.LoadScene("MainPortraitScene");
-    }
+    // Load the portrait scene where feedback is shown
+    SceneManager.LoadScene("MainPortraitScene");
+}
 
     void OnApplicationPause(bool pause)
     {

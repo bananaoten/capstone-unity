@@ -3308,6 +3308,51 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 6055277006425145491, guid: 20d585a7455246b418fbe9cd2394be1e, type: 3}
+--- !u!1 &1020669262
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1020669264}
+  - component: {fileID: 1020669263}
+  m_Layer: 0
+  m_Name: CardboardLogic (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1020669263
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1020669262}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1edb6a4b035a413489662f87035b396c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  modelName: treelanecornerleft
+--- !u!4 &1020669264
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1020669262}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.97875446, y: 2.4399967, z: -2.1536238}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!64 &1027116138
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -4015,7 +4060,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1431994852
 Transform:
   m_ObjectHideFlags: 0
@@ -4043,6 +4088,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fce1efb3b87f67d4283bc072224be958, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  modelName: treelaneleft
 --- !u!64 &1439765605
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -7480,3 +7526,4 @@ SceneRoots:
   - {fileID: 1742769645}
   - {fileID: 1291021720}
   - {fileID: 1683083476}
+  - {fileID: 1020669264}

@@ -1,7 +1,7 @@
 using UnityEngine;
 using Google.XR.Cardboard;
-using UnityEngine.SceneManagement;
 using UnityEngine.XR.Management;
+using UnityEngine.SceneManagement;
 using System.Collections;
 
 public class CardboardExitHandlerLancrisMiddle : MonoBehaviour
@@ -18,7 +18,6 @@ public class CardboardExitHandlerLancrisMiddle : MonoBehaviour
 
     IEnumerator WaitForXRAndUpdateScreenParams()
     {
-        // Wait until XR is fully initialized
         yield return new WaitUntil(() => XRGeneralSettings.Instance.Manager.isInitializationComplete);
         Api.UpdateScreenParams();
     }
@@ -28,9 +27,9 @@ public class CardboardExitHandlerLancrisMiddle : MonoBehaviour
         if (Api.IsCloseButtonPressed && !exitInitiated)
         {
             exitInitiated = true;
-            Debug.Log("Exit (X) button pressed. Exiting VR and returning to MainPortraitScene (Lancris Middle)...");
+            Debug.Log("Exit (X) button pressed. Stopping XR and reloading scene...");
 
-            StartCoroutine(ExitVRAndReturnToMainPortrait());
+            StartCoroutine(ExitVRAndReloadScene());
         }
 
         if (Api.IsGearButtonPressed)
@@ -40,23 +39,28 @@ public class CardboardExitHandlerLancrisMiddle : MonoBehaviour
         }
     }
 
-    IEnumerator ExitVRAndReturnToMainPortrait()
+    IEnumerator ExitVRAndReloadScene()
     {
-        // Stop XR safely
+        // Stop XR
         XRGeneralSettings.Instance.Manager.StopSubsystems();
         XRGeneralSettings.Instance.Manager.DeinitializeLoader();
 
-        // Set PlayerPrefs for UI and feedback
-        PlayerPrefs.SetString("ShowUI", "PropertyDetailsLancrisMiddle"); // UI canvas to show
-        PlayerPrefs.SetInt("ShowFeedback", 1); // Trigger feedback display
-        PlayerPrefs.SetString("FeedbackModelName", modelName); // Model name for feedback
+        // Save feedback data for Lancris Middle
+        PlayerPrefs.SetInt("ShowFeedback", 1);
+        PlayerPrefs.SetString("FeedbackModelName", modelName);
+        PlayerPrefs.SetString("ShowUI", "PropertyDetailsLancrisMiddle");
+        PlayerPrefs.SetString("TargetCanvas", "Property Details Lancris Middle");
         PlayerPrefs.Save();
 
-        // Set to portrait and wait a frame
-        Screen.orientation = ScreenOrientation.Portrait;
         yield return null;
 
-        // Load the MainPortraitScene where feedback will show
+        // Reset to portrait orientation
+        Screen.orientation = ScreenOrientation.Portrait;
+
+        // Delay one more frame for safety
+        yield return null;
+
+        // Load the portrait scene where feedback is shown
         SceneManager.LoadScene("MainPortraitScene");
     }
 

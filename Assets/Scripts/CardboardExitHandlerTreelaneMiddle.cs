@@ -1,7 +1,7 @@
 using UnityEngine;
 using Google.XR.Cardboard;
-using UnityEngine.SceneManagement;
 using UnityEngine.XR.Management;
+using UnityEngine.SceneManagement;
 using System.Collections;
 
 public class CardboardExitHandlerTreelaneMiddle : MonoBehaviour
@@ -18,7 +18,6 @@ public class CardboardExitHandlerTreelaneMiddle : MonoBehaviour
 
     IEnumerator WaitForXRAndUpdateScreenParams()
     {
-        // Wait until XR initialization is complete
         yield return new WaitUntil(() => XRGeneralSettings.Instance.Manager.isInitializationComplete);
         Api.UpdateScreenParams();
     }
@@ -28,9 +27,9 @@ public class CardboardExitHandlerTreelaneMiddle : MonoBehaviour
         if (Api.IsCloseButtonPressed && !exitInitiated)
         {
             exitInitiated = true;
-            Debug.Log("Exit (X) button pressed. Returning to MainPortraitScene (Treelane Middle)...");
+            Debug.Log("Exit (X) button pressed. Stopping XR and reloading scene...");
 
-            StartCoroutine(ExitVRAndReturnToMainPortrait());
+            StartCoroutine(ExitVRAndReloadScene());
         }
 
         if (Api.IsGearButtonPressed)
@@ -40,23 +39,28 @@ public class CardboardExitHandlerTreelaneMiddle : MonoBehaviour
         }
     }
 
-    IEnumerator ExitVRAndReturnToMainPortrait()
+    IEnumerator ExitVRAndReloadScene()
     {
-        // Stop VR
+        // Stop XR
         XRGeneralSettings.Instance.Manager.StopSubsystems();
         XRGeneralSettings.Instance.Manager.DeinitializeLoader();
 
-        // Set PlayerPrefs for feedback
-        PlayerPrefs.SetString("ShowUI", "PropertyDetailsTreelaneMiddle");
+        // Save feedback data for Treelane Middle
         PlayerPrefs.SetInt("ShowFeedback", 1);
         PlayerPrefs.SetString("FeedbackModelName", modelName);
+        PlayerPrefs.SetString("ShowUI", "PropertyDetailsTreelaneMiddle");
+        PlayerPrefs.SetString("TargetCanvas", "Property Details Treelane Middle");
         PlayerPrefs.Save();
 
-        // Set screen orientation
-        Screen.orientation = ScreenOrientation.Portrait;
         yield return null;
 
-        // Load scene
+        // Reset to portrait orientation
+        Screen.orientation = ScreenOrientation.Portrait;
+
+        // Delay one more frame for safety
+        yield return null;
+
+        // Load the portrait scene where feedback is shown
         SceneManager.LoadScene("MainPortraitScene");
     }
 
