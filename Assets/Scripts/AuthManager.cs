@@ -84,68 +84,73 @@ public class AuthManager : MonoBehaviour
     }
 
     public void OnSignUp()
+{
+    string email = signUpEmailInput.text.Trim();
+    string password = signUpPasswordInput.text;
+    string confirmPassword = signUpConfirmPasswordInput.text;
+
+    signUpErrorText.text = "";
+    termsErrorText.text = "";
+
+    if (!IsValidEmail(email))
     {
-        string email = signUpEmailInput.text.Trim();
-        string password = signUpPasswordInput.text;
-        string confirmPassword = signUpConfirmPasswordInput.text;
-
-        signUpErrorText.text = "";
-        termsErrorText.text = "";
-
-        if (!IsValidEmail(email))
-        {
-            signUpErrorText.text = "Invalid email format.";
-            return;
-        }
-
-        if (string.IsNullOrEmpty(password))
-        {
-            signUpErrorText.text = "Password cannot be empty.";
-            return;
-        }
-
-        if (password.Length < 8)
-        {
-            signUpErrorText.text = "Password must be at least 8 characters.";
-            return;
-        }
-
-        if (password != confirmPassword)
-        {
-            signUpErrorText.text = "Passwords do not match.";
-            return;
-        }
-
-        if (termsToggle == null || !termsToggle.isOn)
-        {
-            termsErrorText.text = "Terms and Conditions is required.";
-            return;
-        }
-
-        if (!FirebaseInitializer.IsFirebaseReady || auth == null)
-        {
-            signUpErrorText.text = "Initializing Firebase, please wait...";
-            StartCoroutine(RetryAfterDelay(() => OnSignUp(), 1f));
-            return;
-        }
-
-        auth.CreateUserWithEmailAndPasswordAsync(email, password).ContinueWithOnMainThread(task =>
-        {
-            if (task.IsCanceled || task.IsFaulted)
-            {
-                signUpErrorText.text = "Sign up failed: " + GetErrorMessage(task.Exception);
-                return;
-            }
-
-            FirebaseUser newUser = task.Result.User;
-            signUpErrorText.text = "Sign up successful. Welcome, " + newUser.Email;
-
-            signUpCanvas.SetActive(false);
-            signupSetupLandingCanvas.SetActive(true);
-
-            ClearSignUpInputs();
-        });
+        signUpErrorText.text = "Invalid email format.";
+        return;
     }
+
+    if (string.IsNullOrEmpty(password))
+    {
+        signUpErrorText.text = "Password cannot be empty.";
+        return;
+    }
+
+    if (password.Length < 8)
+    {
+        signUpErrorText.text = "Password must be at least 8 characters.";
+        return;
+    }
+
+    if (password != confirmPassword)
+    {
+        signUpErrorText.text = "Passwords do not match.";
+        return;
+    }
+
+    if (termsToggle == null || !termsToggle.isOn)
+    {
+        termsErrorText.text = "Terms and Conditions is required.";
+        return;
+    }
+
+    if (!FirebaseInitializer.IsFirebaseReady || auth == null)
+    {
+        signUpErrorText.text = "Initializing Firebase, please wait...";
+        StartCoroutine(RetryAfterDelay(() => OnSignUp(), 1f));
+        return;
+    }
+
+    auth.CreateUserWithEmailAndPasswordAsync(email, password).ContinueWithOnMainThread(task =>
+    {
+        if (task.IsCanceled || task.IsFaulted)
+        {
+            signUpErrorText.text = "Sign up failed: " + GetErrorMessage(task.Exception);
+            return;
+        }
+
+        FirebaseUser newUser = task.Result.User;
+        signUpErrorText.text = "Sign up successful. Welcome, " + newUser.Email;
+
+        signUpCanvas.SetActive(false);
+
+        var verificationManager = FindObjectOfType<EmailVerificationManager>();
+        verificationManager.ShowWaitingCanvas();
+        verificationManager.SendVerificationEmail();
+        verificationManager.StartVerificationTimeout(); // ✅ Start countdown here
+
+        ClearSignUpInputs();
+    });
+}
+
 
     private IEnumerator RetryAfterDelay(System.Action action, float delay)
     {

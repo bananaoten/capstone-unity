@@ -15,7 +15,7 @@ public class FeedbackController : MonoBehaviour
             PlayerPrefs.SetInt("ShowFeedback", 0); // Reset flag
             PlayerPrefs.Save();
 
-            string targetCanvasName = PlayerPrefs.GetString("TargetCanvas", "Property Details");
+            string targetCanvasName = PlayerPrefs.GetString("TargetCanvas", "PropertyDetails");
             Debug.Log("Looking for canvas: " + targetCanvasName);
 
             GameObject targetCanvas = canvases.Find(c => c.name == targetCanvasName);

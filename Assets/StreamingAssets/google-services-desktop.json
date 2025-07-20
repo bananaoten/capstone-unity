@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "1079448322772-6213l44gpsl044jedmo8prrk17sq3o3k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cecs.capstone",
+            "certificate_hash": "a7fac35edf92f5a1ce1592e8f5d1a97af6084805"
+          }
+        },
+        {
           "client_id": "1079448322772-08jvb13dcfgcjapakic2nl2kdtg5g0eu.apps.googleusercontent.com",
           "client_type": 3
         }
