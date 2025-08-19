@@ -94,7 +94,12 @@ public class MessageListener : MonoBehaviour
         }
 
         currentUserId = newUserId;
-        msgRef = FirebaseInitializer.Database.GetReference("messages").Child(currentUserId);
+
+        // ✅ Updated: point to messages/treelane/{userId}
+        msgRef = FirebaseInitializer.Database
+            .GetReference("messages")
+            .Child("treelane")
+            .Child(currentUserId);
 
         // Load previous messages
         msgRef.GetValueAsync().ContinueWith(task =>

@@ -22,7 +22,12 @@ public class MessagePreviewLoader : MonoBehaviour
         if (user == null) return;
 
         string userId = user.UserId;
-        var msgRef = FirebaseDatabase.DefaultInstance.GetReference("messages").Child(userId);
+
+        // ✅ Updated to include "treelane"
+        var msgRef = FirebaseDatabase.DefaultInstance
+            .GetReference("messages")
+            .Child("treelane")
+            .Child(userId);
 
         msgRef.OrderByChild("timestamp").LimitToLast(1).GetValueAsync().ContinueWith(task =>
         {

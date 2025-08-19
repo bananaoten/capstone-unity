@@ -15,7 +15,12 @@ public class MessagePage1 : MonoBehaviour
     void Start()
     {
         string userId = FirebaseAuth.DefaultInstance.CurrentUser.UserId;
-        var rootRef = FirebaseDatabase.DefaultInstance.GetReference("messages").Child(userId);
+
+        // ✅ Updated path: messages/treelane/{userId}
+        var rootRef = FirebaseDatabase.DefaultInstance
+            .GetReference("messages")
+            .Child("treelane")
+            .Child(userId);
 
         rootRef.GetValueAsync().ContinueWith(task =>
         {
@@ -51,4 +56,3 @@ public class MessagePage1 : MonoBehaviour
         });
     }
 }
-    

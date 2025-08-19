@@ -15,7 +15,13 @@ public class MessageSender : MonoBehaviour
         if (string.IsNullOrEmpty(text)) return;
 
         string userId = FirebaseAuth.DefaultInstance.CurrentUser.UserId;
-        var messageRef = FirebaseDatabase.DefaultInstance.GetReference("messages").Child(userId);
+
+        // ✅ Updated to use "treelane" path
+        var messageRef = FirebaseDatabase.DefaultInstance
+            .GetReference("messages")
+            .Child("treelane")
+            .Child(userId);
+
         string msgKey = messageRef.Push().Key;
 
         var data = new Dictionary<string, object>
@@ -29,7 +35,6 @@ public class MessageSender : MonoBehaviour
 
         inputField.text = "";
 
-        // Remove this line to prevent doubling:
-        // messageListener.DisplayMessageLocally("user", text);
+        // Do NOT display locally here, MessageListener will handle it from Firebase
     }
 }
