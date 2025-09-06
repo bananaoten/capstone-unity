@@ -12,6 +12,9 @@ public class ProfileManager : MonoBehaviour
     public GameObject profilePage;
     public GameObject welcomePage;
 
+    [Header("Principal Buyer Form Reference")]
+    public PrincipalBuyerFormUpdated principalBuyerForm;
+
     [Header("Input Fields (Setup Page)")]
     public TMP_InputField firstNameInput;
     public TMP_InputField lastNameInput;
@@ -40,8 +43,6 @@ public class ProfileManager : MonoBehaviour
     void Start()
     {
         SetAllPagesInactive();
-
-        // Removed landingPage auto-show - call StartProfileFlow manually after login
 
         if (FirebaseInitializer.IsFirebaseReady)
         {
@@ -177,8 +178,10 @@ public class ProfileManager : MonoBehaviour
 
             // Save locally for persistence between scenes
             SaveProfileDataToLocal(profileData);
-
             PlayerPrefs.Save();
+
+            // 👉 Sync to Principal Buyer form
+            SyncProfileToPrincipalBuyerForm(profileData);
 
             ShowWelcomePage();
             LoadProfileData();
@@ -214,8 +217,11 @@ public class ProfileManager : MonoBehaviour
                 contactNumberText.text = data.ContactNumber;
                 updateFullNameInput.text = data.FullName;
 
-                // Save locally for persistence between scenes
+                // Save locally
                 SaveProfileDataToLocal(data);
+
+                // 👉 Sync to Principal Buyer form
+                SyncProfileToPrincipalBuyerForm(data);
             }
         }
         catch (System.Exception ex)
@@ -299,6 +305,9 @@ public class ProfileManager : MonoBehaviour
             // Save locally
             SaveProfileDataToLocal(profileUpdate);
 
+            // 👉 Sync to Principal Buyer form
+            SyncProfileToPrincipalBuyerForm(profileUpdate);
+
             updateValidationText.color = Color.green;
             updateValidationText.text = "Profile updated successfully!";
         }
@@ -325,7 +334,7 @@ public class ProfileManager : MonoBehaviour
         if (welcomePage != null) welcomePage.SetActive(false);
     }
 
-    // Save profile data locally in PlayerPrefs for persistence between scenes
+    // Save profile data locally in PlayerPrefs
     private void SaveProfileDataToLocal(UserProfileData data)
     {
         PlayerPrefs.SetString("FullName", data.FullName);
@@ -349,12 +358,44 @@ public class ProfileManager : MonoBehaviour
         {
             contactNumberText.text = contactNumber;
         }
+
+        if (!string.IsNullOrEmpty(fullName) || !string.IsNullOrEmpty(contactNumber))
+        {
+            var localData = new UserProfileData
+            {
+                FullName = fullName,
+                ContactNumber = contactNumber,
+                Email = "" // Email isn’t stored locally
+            };
+
+            // 👉 Sync to Principal Buyer form
+            SyncProfileToPrincipalBuyerForm(localData);
+        }
     }
 
     public void LoadAndShowProfileAfterLogin()
     {
         ShowWelcomePage();
         LoadProfileData();
+    }
+
+    private void SyncProfileToPrincipalBuyerForm(UserProfileData data)
+    {
+        if (principalBuyerForm != null)
+        {
+            if (principalBuyerForm.firstName != null)
+                principalBuyerForm.firstName.text = data.FullName.Split(' ')[0]; // First word as First Name
+
+            if (principalBuyerForm.lastName != null)
+            {
+                string[] nameParts = data.FullName.Split(' ');
+                if (nameParts.Length > 1)
+                    principalBuyerForm.lastName.text = nameParts[nameParts.Length - 1]; // Last word as Last Name
+            }
+
+            if (principalBuyerForm.contactNumber != null)
+                principalBuyerForm.contactNumber.text = data.ContactNumber;
+        }
     }
 }
 

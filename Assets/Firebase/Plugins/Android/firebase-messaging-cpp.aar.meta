@@ -1,10 +1,9 @@
 fileFormatVersion: 2
-guid: 9f2edbf81053418f879076c05f816dc2
+guid: 0be2cda49adc4b61a7e9eb9bf669fdab
 labels:
 - gvh
-- gvh_targets-editor
 - gvh_version-12.8.0
-- gvhp_exportpath-Firebase/Editor/Firebase.Editor.dll
+- gvhp_exportpath-Firebase/Plugins/Android/firebase-messaging-cpp.aar
 timeCreated: 1480838400
 PluginImporter:
   serializedVersion: 1
@@ -13,7 +12,7 @@ PluginImporter:
   isPreloaded: 0
   platformData:
     Android:
-      enabled: 0
+      enabled: 1
       settings:
         CPU: AnyCPU
     Any:

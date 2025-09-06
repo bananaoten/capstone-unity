@@ -88,7 +88,7 @@ public class EmailVerificationManager : MonoBehaviour
             return;
         }
 
-        messageText.text = $"Verification email sent to {user.Email}.";
+        messageText.text = $"Verification email sent to {user.Email}. Please check your Spam or Inbox";
         StartCoroutine(ReenableButtonAfterDelay(10f));
         Debug.Log("Verification email sent successfully.");
     });

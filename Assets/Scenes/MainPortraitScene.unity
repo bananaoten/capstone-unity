@@ -3352,8 +3352,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -759}
-  m_SizeDelta: {x: -16.7552, y: 369.9016}
+  m_AnchoredPosition: {x: -0.0024414062, y: -753.1777}
+  m_SizeDelta: {x: -36.163, y: 358.257}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &7900343
 MonoBehaviour:
@@ -3376,8 +3376,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_text: "A password reset link has been sent to your email.\r\n\r\nPlease check
-    your inbox and follow the instructions to reset your password.\r\n\r\nOnce done,
-    return here and tap \u201CI\u2019ve Reset My Password\u201D."
+    your Spam or Inbox and follow the instructions to reset your password.\r\n\r\nOnce
+    done, return here and tap \u201CI\u2019ve Reset My Password\u201D."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -25183,7 +25183,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -31.835571, y: 51.137}
+  m_AnchoredPosition: {x: -31.83545, y: 51.137}
   m_SizeDelta: {x: -263.6711, y: 50.008}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &73999140
@@ -152679,7 +152679,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -43.517, y: 460.06}
+  m_AnchoredPosition: {x: -43.51709, y: 460.06}
   m_SizeDelta: {x: -287.03, y: 50.011}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &480719481
@@ -443192,6 +443192,7 @@ MonoBehaviour:
   profileSetupPage: {fileID: 739686917}
   profilePage: {fileID: 134242034}
   welcomePage: {fileID: 2020739065}
+  principalBuyerForm: {fileID: 816008805}
   firstNameInput: {fileID: 123248065}
   lastNameInput: {fileID: 2047617907}
   contactNumberInput: {fileID: 17200973}
@@ -494350,7 +494351,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0.00012207031, y: 34.52246}
+  m_AnchoredPosition: {x: 0, y: 34.52246}
   m_SizeDelta: {x: 14.8799, y: 69.0452}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1539149806
