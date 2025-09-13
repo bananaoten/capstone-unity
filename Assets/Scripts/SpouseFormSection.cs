@@ -1,5 +1,7 @@
 using UnityEngine;
 using TMPro;
+using System;
+using System.Globalization;
 
 public class SpouseFormSection : MonoBehaviour
 {
@@ -30,6 +32,115 @@ public class SpouseFormSection : MonoBehaviour
 
     [Header("Validation UI")]
     public TMP_Text validationMessage;
+
+    // 🔹 Birthday formatter support
+    private bool suppressBirthdayCallback = false;
+
+    private void Start()
+    {
+        if (birthday != null)
+        {
+            birthday.characterLimit = 10; // MM/DD/YYYY
+            birthday.onValueChanged.AddListener(OnBirthdayChanged);
+            birthday.onEndEdit.AddListener(OnBirthdayEndEdit); // calculate age when user finishes
+        }
+    }
+
+    private void OnBirthdayChanged(string input)
+    {
+        if (suppressBirthdayCallback) return;
+
+        // Keep only digits
+        string digits = "";
+        foreach (char c in input)
+        {
+            if (char.IsDigit(c))
+                digits += c;
+        }
+
+        string formatted = "";
+
+        // Handle Month
+        if (digits.Length >= 2)
+        {
+            int month = int.Parse(digits.Substring(0, 2));
+            if (month > 12) month = 12;
+            formatted = month.ToString("00");
+        }
+        else if (digits.Length > 0)
+        {
+            formatted = digits;
+        }
+
+        // Handle Day
+        if (digits.Length >= 4)
+        {
+            int day = int.Parse(digits.Substring(2, 2));
+            if (day > 31) day = 31;
+            formatted += day.ToString("00");
+        }
+        else if (digits.Length > 2)
+        {
+            formatted += digits.Substring(2);
+        }
+
+        // Handle Year
+        if (digits.Length > 4)
+        {
+            string year = digits.Substring(4);
+            formatted += year;
+        }
+
+        // Insert slashes
+        if (formatted.Length > 2) formatted = formatted.Insert(2, "/");
+        if (formatted.Length > 5) formatted = formatted.Insert(5, "/");
+        if (formatted.Length > 10) formatted = formatted.Substring(0, 10);
+
+        suppressBirthdayCallback = true;
+        birthday.text = formatted;
+        suppressBirthdayCallback = false;
+
+        // Keep caret at the end
+        birthday.caretPosition = birthday.text.Length;
+
+        // If full date typed → calculate immediately
+        if (birthday.text.Length == 10)
+        {
+            CalculateAgeFromBirthday();
+        }
+    }
+
+    private void OnBirthdayEndEdit(string input)
+    {
+        CalculateAgeFromBirthday();
+    }
+
+    private void CalculateAgeFromBirthday()
+    {
+        if (birthday == null || age == null) return;
+
+        string txt = birthday.text?.Trim();
+        if (string.IsNullOrEmpty(txt) || txt.Length != 10)
+        {
+            age.text = "";
+            return;
+        }
+
+        DateTime birthDate;
+        bool parsed = DateTime.TryParseExact(txt, "MM/dd/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out birthDate);
+
+        if (!parsed)
+        {
+            age.text = "";
+            return;
+        }
+
+        int calculatedAge = DateTime.Now.Year - birthDate.Year;
+        if (DateTime.Now.Date < birthDate.AddYears(calculatedAge).Date)
+            calculatedAge--;
+
+        age.text = calculatedAge.ToString();
+    }
 
     public bool ValidateSpousePanel()
     {

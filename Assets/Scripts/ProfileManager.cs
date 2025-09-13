@@ -44,6 +44,14 @@ public class ProfileManager : MonoBehaviour
     {
         SetAllPagesInactive();
 
+        // 🔒 Enforce digits-only & 11-digit max for PH contact numbers
+        if (contactNumberInput != null)
+        {
+            contactNumberInput.contentType = TMP_InputField.ContentType.IntegerNumber;
+            contactNumberInput.characterLimit = 11;
+            contactNumberInput.onValueChanged.AddListener(OnContactNumberChanged);
+        }
+
         if (FirebaseInitializer.IsFirebaseReady)
         {
             InitializeFirebase();
@@ -144,9 +152,10 @@ public class ProfileManager : MonoBehaviour
             return;
         }
 
-        if (string.IsNullOrEmpty(contact) || !IsDigitsOnly(contact))
+        // ✅ PH contact number validation
+        if (string.IsNullOrEmpty(contact) || !IsValidPHContact(contact))
         {
-            setupValidationText.text = "Contact Number must contain digits only.";
+            setupValidationText.text = "Invalid Contact Number. Must be 11 digits and start with '09'.";
             return;
         }
 
@@ -317,13 +326,16 @@ public class ProfileManager : MonoBehaviour
         }
     }
 
-    private bool IsDigitsOnly(string str)
+    // 🔒 Prevents letters/symbols if pasted
+    private void OnContactNumberChanged(string value)
     {
-        foreach (char c in str)
-        {
-            if (!char.IsDigit(c)) return false;
-        }
-        return true;
+        contactNumberInput.text = new string(System.Array.FindAll(value.ToCharArray(), char.IsDigit));
+    }
+
+    // ✅ PH number validation: must start with "09" and be exactly 11 digits
+    private bool IsValidPHContact(string contact)
+    {
+        return System.Text.RegularExpressions.Regex.IsMatch(contact, @"^(09)\d{9}$");
     }
 
     private void SetAllPagesInactive()

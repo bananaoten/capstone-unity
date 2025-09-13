@@ -1,6 +1,8 @@
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using System;
+using System.Globalization; // for TryParseExact
 
 public class PrincipalBuyerFormUpdated : MonoBehaviour
 {
@@ -46,6 +48,118 @@ public class PrincipalBuyerFormUpdated : MonoBehaviour
     public TMP_Dropdown sourceOfIncomeDropdown;
 
     public string PrincipalBuyerCivilStatus => civilStatus.options[civilStatus.value].text;
+
+    // 🔹 Birthday formatter support
+    private bool suppressBirthdayCallback = false;
+
+    private void Start()
+    {
+        if (birthday != null)
+        {
+            birthday.characterLimit = 10; // MM/DD/YYYY
+            birthday.onValueChanged.AddListener(OnBirthdayChanged);
+            // Also listen for end-edit so we calculate age if user finishes by leaving the field
+            birthday.onEndEdit.AddListener(OnBirthdayEndEdit);
+        }
+    }
+
+    private void OnBirthdayChanged(string input)
+    {
+        if (suppressBirthdayCallback) return;
+
+        // Keep only digits
+        string digits = "";
+        foreach (char c in input)
+        {
+            if (char.IsDigit(c))
+                digits += c;
+        }
+
+        string formatted = "";
+
+        // Handle Month
+        if (digits.Length >= 2)
+        {
+            int month = int.Parse(digits.Substring(0, 2));
+            if (month > 12) month = 12;
+            formatted = month.ToString("00");
+        }
+        else if (digits.Length > 0)
+        {
+            formatted = digits;
+        }
+
+        // Handle Day
+        if (digits.Length >= 4)
+        {
+            int day = int.Parse(digits.Substring(2, 2));
+            if (day > 31) day = 31;
+            formatted += day.ToString("00");
+        }
+        else if (digits.Length > 2)
+        {
+            formatted += digits.Substring(2);
+        }
+
+        // Handle Year
+        if (digits.Length > 4)
+        {
+            string year = digits.Substring(4);
+            formatted += year;
+        }
+
+        // Insert slashes
+        if (formatted.Length > 2) formatted = formatted.Insert(2, "/");
+        if (formatted.Length > 5) formatted = formatted.Insert(5, "/");
+        if (formatted.Length > 10) formatted = formatted.Substring(0, 10);
+
+        suppressBirthdayCallback = true;
+        birthday.text = formatted;
+        suppressBirthdayCallback = false;
+
+        // Keep caret at the end for smooth typing
+        birthday.caretPosition = birthday.text.Length;
+
+        // Only calculate age when full MM/DD/YYYY (10 chars) is present
+        if (birthday.text.Length == 10)
+        {
+            CalculateAgeFromBirthday();
+        }
+    }
+
+    // Called when user finishes editing (clicks away / presses enter)
+    private void OnBirthdayEndEdit(string input)
+    {
+        CalculateAgeFromBirthday();
+    }
+
+    private void CalculateAgeFromBirthday()
+    {
+        if (birthday == null || age == null) return;
+
+        string txt = birthday.text?.Trim();
+        if (string.IsNullOrEmpty(txt) || txt.Length != 10)
+        {
+            age.text = ""; // clear if not complete
+            return;
+        }
+
+        // Parse using exact MM/dd/yyyy format for consistency
+        DateTime birthDate;
+        bool parsed = DateTime.TryParseExact(txt, "MM/dd/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out birthDate);
+
+        if (!parsed)
+        {
+            age.text = ""; // invalid date -> clear age
+            return;
+        }
+
+        int calculatedAge = DateTime.Now.Year - birthDate.Year;
+        if (DateTime.Now.Date < birthDate.AddYears(calculatedAge).Date)
+            calculatedAge--;
+
+        age.text = calculatedAge.ToString();
+    }
 
     public bool ValidatePrincipalBuyerPanel()
     {
@@ -108,14 +222,14 @@ public class PrincipalBuyerFormUpdated : MonoBehaviour
         return true;
     }
 
-   private void SetValidationMessage(string message)
-{
-    Debug.Log("Setting validation message: " + message); // Add this line
-    if (validationMessage != null)
+    private void SetValidationMessage(string message)
     {
-        validationMessage.text = message;
+        Debug.Log("Setting validation message: " + message); // Add this line
+        if (validationMessage != null)
+        {
+            validationMessage.text = message;
+        }
     }
-}
 
     private void ClearValidation()
     {
@@ -126,10 +240,10 @@ public class PrincipalBuyerFormUpdated : MonoBehaviour
     }
 
     // Add this method inside your PrincipalBuyerFormUpdated class
-public string GetValidationMessage()
-{
-    return validationMessage != null ? validationMessage.text : "Please fill all required fields.";
-}
+    public string GetValidationMessage()
+    {
+        return validationMessage != null ? validationMessage.text : "Please fill all required fields.";
+    }
 
     // Delegated panel validators
     public bool ValidateSpousePanel()

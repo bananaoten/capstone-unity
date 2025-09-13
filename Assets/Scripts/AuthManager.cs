@@ -43,47 +43,56 @@ public class AuthManager : MonoBehaviour
     }
 
     public void OnLogin()
+{
+    string email = loginEmailInput.text.Trim();
+    string password = loginPasswordInput.text;
+
+    loginErrorText.text = "";
+
+    // ✅ Internet check
+    if (Application.internetReachability == NetworkReachability.NotReachable)
     {
-        string email = loginEmailInput.text.Trim();
-        string password = loginPasswordInput.text;
-
-        if (!IsValidEmail(email) || string.IsNullOrEmpty(password))
-        {
-            loginErrorText.text = "Incorrect Email or Password.";
-            return;
-        }
-
-        if (!FirebaseInitializer.IsFirebaseReady || auth == null)
-        {
-            loginErrorText.text = "Initializing Firebase, please wait...";
-            StartCoroutine(RetryAfterDelay(() => OnLogin(), 1f));
-            return;
-        }
-
-        auth.SignInWithEmailAndPasswordAsync(email, password).ContinueWithOnMainThread(task =>
-        {
-            if (task.IsCanceled || task.IsFaulted)
-            {
-                loginErrorText.text = "Login failed: " + GetErrorMessage(task.Exception);
-                return;
-            }
-
-            FirebaseUser user = task.Result.User;
-            loginErrorText.text = "Login successful. Welcome, " + user.Email;
-
-            loginCanvas.SetActive(false);
-            userHomeCanvas.SetActive(true);
-
-            ClearLoginInputs();
-
-            if (profileManager != null)
-            {
-                profileManager.LoadAndShowProfileAfterLogin();
-            }
-        });
+        loginErrorText.text = "You don't have internet access.";
+        return;
     }
 
-    public void OnSignUp()
+    if (!IsValidEmail(email) || string.IsNullOrEmpty(password))
+    {
+        loginErrorText.text = "Incorrect Email or Password.";
+        return;
+    }
+
+    if (!FirebaseInitializer.IsFirebaseReady || auth == null)
+    {
+        loginErrorText.text = "Initializing Firebase, please wait...";
+        StartCoroutine(RetryAfterDelay(() => OnLogin(), 1f));
+        return;
+    }
+
+    auth.SignInWithEmailAndPasswordAsync(email, password).ContinueWithOnMainThread(task =>
+    {
+        if (task.IsCanceled || task.IsFaulted)
+        {
+            loginErrorText.text = "Login failed: " + GetErrorMessage(task.Exception);
+            return;
+        }
+
+        FirebaseUser user = task.Result.User;
+        loginErrorText.text = "Login successful. Welcome, " + user.Email;
+
+        loginCanvas.SetActive(false);
+        userHomeCanvas.SetActive(true);
+
+        ClearLoginInputs();
+
+        if (profileManager != null)
+        {
+            profileManager.LoadAndShowProfileAfterLogin();
+        }
+    });
+}
+
+public void OnSignUp()
 {
     string email = signUpEmailInput.text.Trim();
     string password = signUpPasswordInput.text;
@@ -92,43 +101,55 @@ public class AuthManager : MonoBehaviour
     signUpErrorText.text = "";
     termsErrorText.text = "";
 
-    if (!IsValidEmail(email))
+    // ✅ Internet check
+    if (Application.internetReachability == NetworkReachability.NotReachable)
+    {
+        signUpErrorText.text = "You don't have internet access.";
+        return;
+    }
+
+    // ✅ Check if all fields are empty
+    if (string.IsNullOrEmpty(email) && string.IsNullOrEmpty(password) && string.IsNullOrEmpty(confirmPassword))
+    {
+        signUpErrorText.text = "Please fill out the fields.";
+        return;
+    }
+
+    // ✅ Email validation
+    if (string.IsNullOrEmpty(email) || !IsValidEmail(email))
     {
         signUpErrorText.text = "Invalid email format.";
         return;
     }
 
+    // ✅ Password validation (complex rules)
     if (string.IsNullOrEmpty(password))
     {
         signUpErrorText.text = "Password cannot be empty.";
         return;
     }
 
-    if (password.Length < 8)
+    if (!IsStrongPassword(password))
     {
-        signUpErrorText.text = "Password must be at least 8 characters.";
+        signUpErrorText.text = "Password must contain at least 8 characters, mix upper and lower case letters, number, and special character.";
         return;
     }
 
+    // ✅ Confirm password check
     if (password != confirmPassword)
     {
         signUpErrorText.text = "Passwords do not match.";
         return;
     }
 
+    // ✅ Terms check
     if (termsToggle == null || !termsToggle.isOn)
     {
         termsErrorText.text = "Terms and Conditions is required.";
-        return;
+        return; // stop here, do not go to Firebase
     }
 
-    if (!FirebaseInitializer.IsFirebaseReady || auth == null)
-    {
-        signUpErrorText.text = "Initializing Firebase, please wait...";
-        StartCoroutine(RetryAfterDelay(() => OnSignUp(), 1f));
-        return;
-    }
-
+    // ✅ Firebase signup only if terms are checked
     auth.CreateUserWithEmailAndPasswordAsync(email, password).ContinueWithOnMainThread(task =>
     {
         if (task.IsCanceled || task.IsFaulted)
@@ -145,10 +166,21 @@ public class AuthManager : MonoBehaviour
         var verificationManager = FindObjectOfType<EmailVerificationManager>();
         verificationManager.ShowWaitingCanvas();
         verificationManager.SendVerificationEmail();
-        verificationManager.StartVerificationTimeout(); // ✅ Start countdown here
+        verificationManager.StartVerificationTimeout();
 
         ClearSignUpInputs();
     });
+}
+
+
+
+
+// ✅ Password strength checker
+private bool IsStrongPassword(string password)
+{
+    // At least 8 chars, one upper, one lower, one number, one special char
+    string pattern = @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$";
+    return Regex.IsMatch(password, pattern);
 }
 
 
