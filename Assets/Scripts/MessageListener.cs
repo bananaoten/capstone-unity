@@ -6,6 +6,7 @@ using TMPro;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
+using Firebase.Extensions;
 
 public class MessageListener : MonoBehaviour
 {
@@ -46,6 +47,7 @@ public class MessageListener : MonoBehaviour
             if (msgRef != null)
             {
                 msgRef.ChildAdded -= HandleNewMessage;
+                msgRef.ValueChanged -= HandleMessagesChanged;
             }
         }
         else
@@ -90,19 +92,20 @@ public class MessageListener : MonoBehaviour
         if (isListening && msgRef != null)
         {
             msgRef.ChildAdded -= HandleNewMessage;
+            msgRef.ValueChanged -= HandleMessagesChanged;
             ClearMessageUI();
         }
 
         currentUserId = newUserId;
 
-        // ✅ Updated: point to messages/treelane/{userId}
+        // messages/treelane/{userId}
         msgRef = FirebaseInitializer.Database
             .GetReference("messages")
             .Child("treelane")
             .Child(currentUserId);
 
         // Load previous messages
-        msgRef.GetValueAsync().ContinueWith(task =>
+        msgRef.GetValueAsync().ContinueWithOnMainThread(task =>
         {
             if (task.IsFaulted || task.IsCanceled || isDestroyed)
                 return;
@@ -126,6 +129,7 @@ public class MessageListener : MonoBehaviour
         });
 
         msgRef.ChildAdded += HandleNewMessage;
+        msgRef.ValueChanged += HandleMessagesChanged; // optional, used if you want to react to edits
         isListening = true;
     }
 
@@ -183,6 +187,11 @@ public class MessageListener : MonoBehaviour
         }
     }
 
+    private void HandleMessagesChanged(object sender, ValueChangedEventArgs args)
+    {
+        // you can use this to respond to edits; not required for badge
+    }
+
     public void DisplayMessageLocally(string from, string text)
     {
         if (isDestroyed || contentPanel == null)
@@ -210,4 +219,28 @@ public class MessageListener : MonoBehaviour
                 Destroy(contentPanel.GetChild(i).gameObject);
         }
     }
+
+    // Call this when the chat panel is opened by the user
+   public void MarkAllAsRead()
+{
+    string userId = FirebaseAuth.DefaultInstance.CurrentUser.UserId;
+    var messagesRef = FirebaseDatabase.DefaultInstance.RootReference
+        .Child("messages").Child("treelane").Child(userId);
+
+    messagesRef.GetValueAsync().ContinueWith(task =>
+    {
+        if (task.IsCompleted && task.Result.Exists)
+        {
+            foreach (var child in task.Result.Children)
+            {
+                var dict = child.Value as Dictionary<string, object>;
+                if (dict != null && dict.ContainsKey("from") && dict["from"].ToString() == "admin")
+                {
+                    messagesRef.Child(child.Key).Child("isRead").SetValueAsync(true);
+                }
+            }
+        }
+    });
+}
+
 }

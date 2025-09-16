@@ -6,7 +6,10 @@ using System.Collections.Generic;
 
 public class MessageSender : MonoBehaviour
 {
+    [Header("UI")]
     public TMP_InputField inputField;
+
+    [Header("References (optional)")]
     public MessageListener messageListener;
 
     public void SendMessageToAdmin()
@@ -14,9 +17,15 @@ public class MessageSender : MonoBehaviour
         string text = inputField.text.Trim();
         if (string.IsNullOrEmpty(text)) return;
 
-        string userId = FirebaseAuth.DefaultInstance.CurrentUser.UserId;
+        var user = FirebaseAuth.DefaultInstance.CurrentUser;
+        if (user == null)
+        {
+            Debug.LogError("Cannot send message: no authenticated user.");
+            return;
+        }
 
-        // ✅ Updated to use "treelane" path
+        string userId = user.UserId;
+
         var messageRef = FirebaseDatabase.DefaultInstance
             .GetReference("messages")
             .Child("treelane")
@@ -28,13 +37,22 @@ public class MessageSender : MonoBehaviour
         {
             { "from", "user" },
             { "text", text },
-            { "timestamp", ServerValue.Timestamp }
+            { "timestamp", ServerValue.Timestamp },
+            { "isRead", true }       // user messages are already read by the user
         };
 
-        messageRef.Child(msgKey).SetValueAsync(data);
+        messageRef.Child(msgKey).SetValueAsync(data).ContinueWith(task =>
+        {
+            if (task.IsFaulted)
+            {
+                Debug.LogError("Failed to send message: " + task.Exception);
+            }
+            else
+            {
+                Debug.Log("Message sent.");
+            }
+        });
 
         inputField.text = "";
-
-        // Do NOT display locally here, MessageListener will handle it from Firebase
     }
 }

@@ -8,8 +8,13 @@ using System.Collections.Generic;
 
 public class RecentMessageDisplayLancris : MonoBehaviour
 {
+    [Header("UI References")]
     public TMP_Text recentMessageText;
     public TMP_Text recentTimestampText;
+
+    [Header("Unread Badge 🔴")]
+    public GameObject badgeObject;   // red circle
+    public TMP_Text badgeText;       // number inside red circle
 
     private DatabaseReference messageRef;
     private FirebaseUser currentUser;
@@ -91,18 +96,8 @@ public class RecentMessageDisplayLancris : MonoBehaviour
             .Child("lancris")
             .Child(currentUserId);
 
-        // Listen for new message
-        messageRef.OrderByChild("timestamp").LimitToLast(1).ValueChanged += OnRecentMessageChanged;
+        messageRef.ValueChanged += OnRecentMessageChanged;
         isListening = true;
-
-        // Get most recent message once (initial load)
-        messageRef.OrderByChild("timestamp").LimitToLast(1).GetValueAsync().ContinueWith(task =>
-        {
-            if (task.IsCompleted && task.Result != null)
-            {
-                ProcessSnapshot(task.Result, currentUserId);
-            }
-        });
 
         Debug.Log($"[RecentMessageLancris] Listening to messages/lancris/{currentUserId}");
     }
@@ -127,8 +122,12 @@ public class RecentMessageDisplayLancris : MonoBehaviour
 
     private void ProcessSnapshot(DataSnapshot snapshot, string expectedUserId)
     {
-        // Avoid race condition from previous listener
         if (currentUser == null || currentUser.UserId != expectedUserId) return;
+
+        string lastMsg = "(No Message)";
+        string lastTime = "";
+        int unreadCount = 0;
+        string lastFrom = "";
 
         foreach (var child in snapshot.Children)
         {
@@ -137,38 +136,53 @@ public class RecentMessageDisplayLancris : MonoBehaviour
 
             string from = data.ContainsKey("from") ? data["from"].ToString() : "";
             string text = data.ContainsKey("text") ? data["text"].ToString() : "(No Message)";
-            string time = "(Unknown Time)";
+            bool isRead = data.ContainsKey("isRead") && Convert.ToBoolean(data["isRead"]);
+            string time = "";
 
             if (data.TryGetValue("timestamp", out object timestampObj) &&
                 long.TryParse(timestampObj.ToString(), out long ts))
             {
+                if (ts > 9999999999) ts /= 1000;
                 try
                 {
-                    // Check if in milliseconds and convert to seconds
-                    if (ts > 9999999999)
-                        ts /= 1000;
+                    time = DateTimeOffset.FromUnixTimeSeconds(ts).ToLocalTime().ToString("h:mm tt");
+                }
+                catch { time = "(Invalid Time)"; }
+            }
 
-                    time = DateTimeOffset.FromUnixTimeSeconds(ts)
-                        .ToLocalTime()
-                        .ToString("h:mm tt"); // e.g. 3:11 PM
-                }
-                catch
-                {
-                    time = "(Invalid Timestamp)";
-                }
+            lastMsg = text;
+            lastTime = time;
+            lastFrom = from;
+
+            if ((from == "admin" || from == "agent") && !isRead)
+                unreadCount++;
+        }
+
+        // Prefix the last message
+        string prefix = "";
+        if (lastFrom == "admin" || lastFrom == "agent")
+            prefix = "Agent: ";
+        else if (lastFrom == "user")
+            prefix = "You: ";
+
+        if (recentMessageText != null)
+            recentMessageText.text = prefix + lastMsg;
+
+        if (recentTimestampText != null)
+            recentTimestampText.text = lastTime;
+
+        // 🔴 Badge update
+        if (badgeObject != null && badgeText != null)
+        {
+            if (unreadCount > 0)
+            {
+                badgeObject.SetActive(true);
+                badgeText.text = unreadCount.ToString();
             }
             else
             {
-                time = "(Missing Timestamp)";
+                badgeObject.SetActive(false);
             }
-
-            string prefix = from == "admin" ? "Agent: " : "You: ";
-
-            if (recentMessageText != null)
-                recentMessageText.text = prefix + text;
-
-            if (recentTimestampText != null)
-                recentTimestampText.text = time;
         }
     }
 
@@ -190,6 +204,9 @@ public class RecentMessageDisplayLancris : MonoBehaviour
 
         if (recentTimestampText != null)
             recentTimestampText.text = "";
+
+        if (badgeObject != null)
+            badgeObject.SetActive(false);
     }
 
     private void OnDestroy()
