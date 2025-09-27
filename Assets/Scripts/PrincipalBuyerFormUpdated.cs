@@ -31,21 +31,21 @@ public class PrincipalBuyerFormUpdated : MonoBehaviour
     public TMP_Dropdown genderDropdown;
     public TMP_Dropdown civilStatus;
     public TMP_InputField citizenship;
-    public TMP_InputField religion;
+    public TMP_InputField religion;             // Optional
     public TMP_InputField contactNumber;
-    public TMP_InputField facebookAccount;
+    public TMP_InputField facebookAccount;      // Optional
     public TMP_InputField presentAddress;
     public TMP_InputField permanentAddress;
     public TMP_InputField employerName;
     public TMP_InputField businessNature;
     public TMP_InputField positionAndDepartment;
     public TMP_InputField employerAddress;
-    public TMP_InputField officeTelephone;
+    public TMP_InputField officeTelephone;      // Optional
     public TMP_InputField emailAddress;
-    public TMP_InputField contactPerson;
+    public TMP_InputField contactPerson;        // Optional
     public TMP_InputField tinId;
-    public TMP_InputField pagibigNo;
-    public TMP_Dropdown sourceOfIncomeDropdown;
+    public TMP_InputField pagibigNo;            // Optional unless using Pag-IBIG financing
+    public TMP_Dropdown sourceOfIncomeDropdown; // Optional
 
     public string PrincipalBuyerCivilStatus => civilStatus.options[civilStatus.value].text;
 
@@ -58,7 +58,6 @@ public class PrincipalBuyerFormUpdated : MonoBehaviour
         {
             birthday.characterLimit = 10; // MM/DD/YYYY
             birthday.onValueChanged.AddListener(OnBirthdayChanged);
-            // Also listen for end-edit so we calculate age if user finishes by leaving the field
             birthday.onEndEdit.AddListener(OnBirthdayEndEdit);
         }
     }
@@ -67,7 +66,6 @@ public class PrincipalBuyerFormUpdated : MonoBehaviour
     {
         if (suppressBirthdayCallback) return;
 
-        // Keep only digits
         string digits = "";
         foreach (char c in input)
         {
@@ -77,7 +75,6 @@ public class PrincipalBuyerFormUpdated : MonoBehaviour
 
         string formatted = "";
 
-        // Handle Month
         if (digits.Length >= 2)
         {
             int month = int.Parse(digits.Substring(0, 2));
@@ -89,7 +86,6 @@ public class PrincipalBuyerFormUpdated : MonoBehaviour
             formatted = digits;
         }
 
-        // Handle Day
         if (digits.Length >= 4)
         {
             int day = int.Parse(digits.Substring(2, 2));
@@ -101,14 +97,12 @@ public class PrincipalBuyerFormUpdated : MonoBehaviour
             formatted += digits.Substring(2);
         }
 
-        // Handle Year
         if (digits.Length > 4)
         {
             string year = digits.Substring(4);
             formatted += year;
         }
 
-        // Insert slashes
         if (formatted.Length > 2) formatted = formatted.Insert(2, "/");
         if (formatted.Length > 5) formatted = formatted.Insert(5, "/");
         if (formatted.Length > 10) formatted = formatted.Substring(0, 10);
@@ -117,17 +111,14 @@ public class PrincipalBuyerFormUpdated : MonoBehaviour
         birthday.text = formatted;
         suppressBirthdayCallback = false;
 
-        // Keep caret at the end for smooth typing
         birthday.caretPosition = birthday.text.Length;
 
-        // Only calculate age when full MM/DD/YYYY (10 chars) is present
         if (birthday.text.Length == 10)
         {
             CalculateAgeFromBirthday();
         }
     }
 
-    // Called when user finishes editing (clicks away / presses enter)
     private void OnBirthdayEndEdit(string input)
     {
         CalculateAgeFromBirthday();
@@ -140,17 +131,16 @@ public class PrincipalBuyerFormUpdated : MonoBehaviour
         string txt = birthday.text?.Trim();
         if (string.IsNullOrEmpty(txt) || txt.Length != 10)
         {
-            age.text = ""; // clear if not complete
+            age.text = "";
             return;
         }
 
-        // Parse using exact MM/dd/yyyy format for consistency
         DateTime birthDate;
         bool parsed = DateTime.TryParseExact(txt, "MM/dd/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out birthDate);
 
         if (!parsed)
         {
-            age.text = ""; // invalid date -> clear age
+            age.text = "";
             return;
         }
 
@@ -163,6 +153,7 @@ public class PrincipalBuyerFormUpdated : MonoBehaviour
 
     public bool ValidatePrincipalBuyerPanel()
     {
+        // ✅ Required fields
         if (!ValidateField("Last Name", lastName)) return false;
         if (!ValidateField("First Name", firstName)) return false;
         if (!ValidateField("Middle Name", middleName)) return false;
@@ -172,29 +163,34 @@ public class PrincipalBuyerFormUpdated : MonoBehaviour
         if (!ValidateDropdown("Gender", genderDropdown)) return false;
         if (!ValidateDropdown("Civil Status", civilStatus)) return false;
         if (!ValidateField("Citizenship", citizenship)) return false;
-        if (!ValidateField("Religion", religion)) return false;
         if (!ValidateField("Contact Number", contactNumber)) return false;
-        if (!ValidateField("Facebook Account", facebookAccount)) return false;
         if (!ValidateField("Present Address", presentAddress)) return false;
         if (!ValidateField("Permanent Address", permanentAddress)) return false;
         if (!ValidateField("Employer Name", employerName)) return false;
         if (!ValidateField("Nature of Business", businessNature)) return false;
         if (!ValidateField("Position and Department", positionAndDepartment)) return false;
         if (!ValidateField("Employer Address", employerAddress)) return false;
-        if (!ValidateField("Office Telephone", officeTelephone)) return false;
         if (!ValidateField("Email Address", emailAddress)) return false;
-        if (!ValidateField("Contact Person", contactPerson)) return false;
         if (!ValidateField("TIN ID", tinId)) return false;
 
-        if (pagibigNo != null && string.IsNullOrWhiteSpace(pagibigNo.text))
-        {
-            Debug.Log("[Info] PAGIBIG No. is optional.");
-        }
+        // 🟡 Optional fields (skip validation if empty)
+        if (!string.IsNullOrWhiteSpace(religion?.text))
+            Debug.Log("[Info] Religion provided: " + religion.text);
 
-        if (sourceOfIncomeDropdown != null && sourceOfIncomeDropdown.value == 0)
-        {
-            Debug.Log("[Info] Source of Income is optional.");
-        }
+        if (!string.IsNullOrWhiteSpace(facebookAccount?.text))
+            Debug.Log("[Info] Facebook account provided.");
+
+        if (!string.IsNullOrWhiteSpace(contactPerson?.text))
+            Debug.Log("[Info] Contact person provided.");
+
+        if (!string.IsNullOrWhiteSpace(officeTelephone?.text))
+            Debug.Log("[Info] Office telephone provided.");
+
+        if (pagibigNo != null && !string.IsNullOrWhiteSpace(pagibigNo.text))
+            Debug.Log("[Info] PAGIBIG No. provided.");
+
+        if (sourceOfIncomeDropdown != null && sourceOfIncomeDropdown.value > 0)
+            Debug.Log("[Info] Source of Income selected: " + sourceOfIncomeDropdown.options[sourceOfIncomeDropdown.value].text);
 
         ClearValidation();
         return true;
@@ -224,7 +220,6 @@ public class PrincipalBuyerFormUpdated : MonoBehaviour
 
     private void SetValidationMessage(string message)
     {
-        Debug.Log("Setting validation message: " + message); // Add this line
         if (validationMessage != null)
         {
             validationMessage.text = message;
@@ -239,7 +234,6 @@ public class PrincipalBuyerFormUpdated : MonoBehaviour
         }
     }
 
-    // Add this method inside your PrincipalBuyerFormUpdated class
     public string GetValidationMessage()
     {
         return validationMessage != null ? validationMessage.text : "Please fill all required fields.";
@@ -261,7 +255,6 @@ public class PrincipalBuyerFormUpdated : MonoBehaviour
         return characterReferenceSection == null || characterReferenceSection.ValidateCharacterReferences();
     }
 
-    // ✅ Co-Borrower delegated validation
     public bool ValidateCoBorrowerPrincipalInfoPanel()
     {
         return coBorrowerSection == null || coBorrowerSection.ValidateCoBorrowerInfo();

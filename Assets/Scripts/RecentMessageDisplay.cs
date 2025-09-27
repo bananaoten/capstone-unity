@@ -213,4 +213,34 @@ public class RecentMessageDisplay : MonoBehaviour
         DetachListener();
         FirebaseAuth.DefaultInstance.StateChanged -= OnAuthStateChanged;
     }
+
+    // Call this when user taps THIS chat row
+public void MarkThisChatAsRead()
+{
+    if (messageRef == null || string.IsNullOrEmpty(currentUserId)) return;
+
+    messageRef.GetValueAsync().ContinueWith(task =>
+    {
+        if (task.IsCompleted && task.Result.Exists)
+        {
+            foreach (var child in task.Result.Children)
+            {
+                var dict = child.Value as Dictionary<string, object>;
+                if (dict != null && dict.ContainsKey("from"))
+                {
+                    string from = dict["from"].ToString();
+                    if ((from == "admin" || from == "agent"))
+                    {
+                        messageRef.Child(child.Key).Child("isRead").SetValueAsync(true);
+                    }
+                }
+            }
+        }
+    });
+
+    // 🔹 Hide badge immediately for this row
+    if (badgeObject != null)
+        badgeObject.SetActive(false);
+}
+
 }

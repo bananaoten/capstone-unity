@@ -3,7 +3,8 @@ using TMPro;
 using Firebase.Database;
 using Firebase.Auth;
 using System.Collections.Generic;
-using Firebase.Extensions; // ✅ for ContinueWithOnMainThread
+using Firebase.Extensions; 
+using UnityEngine.SceneManagement;
 
 public class MessageBadgeManager : MonoBehaviour
 {
@@ -42,10 +43,32 @@ public class MessageBadgeManager : MonoBehaviour
         }
     }
 
+    void OnEnable()
+    {
+        // 🔹 Ensure references are refreshed after every scene load
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        Debug.Log($"[BadgeManager] Scene loaded: {scene.name}, refreshing badge references...");
+        ValidateBadgeReferences();
+        UpdateBadgeUI(); // force refresh
+    }
+
     void Start()
     {
         dbRef = FirebaseDatabase.DefaultInstance.RootReference;
         FirebaseAuth.DefaultInstance.StateChanged += OnAuthStateChanged;
+
+        // Ensure refs exist at startup
+        ValidateBadgeReferences();
+
         ListenForMessages();
     }
 
@@ -65,7 +88,11 @@ public class MessageBadgeManager : MonoBehaviour
     private void ListenForMessages()
     {
         string userId = FirebaseAuth.DefaultInstance.CurrentUser?.UserId;
-        if (string.IsNullOrEmpty(userId)) return;
+        if (string.IsNullOrEmpty(userId))
+        {
+            Debug.LogWarning("[BadgeManager] No authenticated user, cannot listen for messages.");
+            return;
+        }
 
         // 🔹 Remove old listeners
         if (treelaneRef != null) treelaneRef.ValueChanged -= HandleTreelaneUpdate;
@@ -77,18 +104,22 @@ public class MessageBadgeManager : MonoBehaviour
 
         treelaneRef.ValueChanged += HandleTreelaneUpdate;
         lancrisRef.ValueChanged += HandleLancrisUpdate;
+
+        Debug.Log($"[BadgeManager] Listening for messages (userId={userId})");
     }
 
     private void HandleTreelaneUpdate(object sender, ValueChangedEventArgs e)
     {
         treelaneUnread = CountUnreadMessages(e);
         UpdateTotalUnread();
+        Debug.Log($"[BadgeManager] Treelane unread={treelaneUnread}");
     }
 
     private void HandleLancrisUpdate(object sender, ValueChangedEventArgs e)
     {
         lancrisUnread = CountUnreadMessages(e);
         UpdateTotalUnread();
+        Debug.Log($"[BadgeManager] Lancris unread={lancrisUnread}");
     }
 
     private int CountUnreadMessages(ValueChangedEventArgs e)
@@ -132,14 +163,26 @@ public class MessageBadgeManager : MonoBehaviour
 
     private void UpdateBadgeUI()
     {
+        if (badgeObjects.Count == 0 || badgeTexts.Count == 0)
+        {
+            Debug.LogWarning("[BadgeManager] No badge objects/texts assigned!");
+            return;
+        }
+
+        Debug.Log($"[BadgeManager] Updating UI: unread={unreadCount}");
+
         for (int i = 0; i < badgeObjects.Count; i++)
         {
-            if (badgeObjects[i] == null || badgeTexts[i] == null) continue;
+            if (badgeObjects[i] == null || badgeTexts.Count <= i || badgeTexts[i] == null)
+            {
+                Debug.LogWarning($"[BadgeManager] Missing reference at index {i}");
+                continue;
+            }
 
             if (unreadCount > 0)
             {
                 badgeObjects[i].SetActive(true);
-                badgeTexts[i].text = unreadCount.ToString();
+                badgeTexts[i].text = unreadCount > 99 ? "99+" : unreadCount.ToString();
             }
             else
             {
@@ -148,12 +191,21 @@ public class MessageBadgeManager : MonoBehaviour
         }
     }
 
+    // ✅ Clear only nav bar badge, no DB update
+    public void ResetNavBarBadge()
+    {
+        unreadCount = 0;
+        UpdateBadgeUI();
+        OnBadgeUpdated?.Invoke(unreadCount);
+    }
+
+    // ✅ Mark all messages as read in Firebase
     public void MarkAllAsReadInDatabase()
     {
         string userId = FirebaseAuth.DefaultInstance.CurrentUser?.UserId;
         if (string.IsNullOrEmpty(userId)) return;
 
-        // 🔹 Mark Treelane as read
+        // 🔹 Treelane
         var treelaneMessages = dbRef.Child("messages").Child("treelane").Child(userId);
         treelaneMessages.GetValueAsync().ContinueWithOnMainThread(task =>
         {
@@ -162,7 +214,8 @@ public class MessageBadgeManager : MonoBehaviour
                 foreach (var child in task.Result.Children)
                 {
                     var dict = child.Value as Dictionary<string, object>;
-                    if (dict != null && dict.ContainsKey("from") && dict["from"].ToString() == "admin")
+                    if (dict != null && dict.ContainsKey("from") &&
+                        (dict["from"].ToString() == "admin" || dict["from"].ToString() == "agent"))
                     {
                         treelaneMessages.Child(child.Key).Child("isRead").SetValueAsync(true);
                     }
@@ -170,7 +223,7 @@ public class MessageBadgeManager : MonoBehaviour
             }
         });
 
-        // 🔹 Mark Lancris as read
+        // 🔹 Lancris
         var lancrisMessages = dbRef.Child("messages").Child("lancris").Child(userId);
         lancrisMessages.GetValueAsync().ContinueWithOnMainThread(task =>
         {
@@ -179,7 +232,8 @@ public class MessageBadgeManager : MonoBehaviour
                 foreach (var child in task.Result.Children)
                 {
                     var dict = child.Value as Dictionary<string, object>;
-                    if (dict != null && dict.ContainsKey("from") && dict["from"].ToString() == "admin")
+                    if (dict != null && dict.ContainsKey("from") &&
+                        (dict["from"].ToString() == "admin" || dict["from"].ToString() == "agent"))
                     {
                         lancrisMessages.Child(child.Key).Child("isRead").SetValueAsync(true);
                     }
@@ -198,5 +252,31 @@ public class MessageBadgeManager : MonoBehaviour
 
         UpdateBadgeUI();
         OnBadgeUpdated?.Invoke(unreadCount);
+    }
+
+    // 🔹 Fallback auto-find (active + inactive objects)
+    private void ValidateBadgeReferences()
+    {
+        if (badgeObjects.Count == 0)
+        {
+            GameObject[] found = Resources.FindObjectsOfTypeAll<GameObject>();
+            foreach (var go in found)
+            {
+                if (go.CompareTag("MessageBadge"))
+                    badgeObjects.Add(go);
+            }
+            Debug.Log($"[BadgeManager] Auto-assigned {badgeObjects.Count} badge objects.");
+        }
+
+        if (badgeTexts.Count == 0)
+        {
+            TextMeshProUGUI[] tmps = Resources.FindObjectsOfTypeAll<TextMeshProUGUI>();
+            foreach (var t in tmps)
+            {
+                if (t.gameObject.name.ToLower().Contains("badge"))
+                    badgeTexts.Add(t);
+            }
+            Debug.Log($"[BadgeManager] Auto-assigned {badgeTexts.Count} badge texts.");
+        }
     }
 }

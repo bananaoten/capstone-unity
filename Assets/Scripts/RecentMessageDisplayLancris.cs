@@ -209,6 +209,35 @@ public class RecentMessageDisplayLancris : MonoBehaviour
             badgeObject.SetActive(false);
     }
 
+    // Call this when the user taps the Lancris chat row
+public void MarkThisChatAsRead()
+{
+    if (currentUser == null || string.IsNullOrEmpty(currentUserId)) return;
+
+    var chatRef = FirebaseInitializer.Database
+        .GetReference("messages")
+        .Child("lancris")
+        .Child(currentUserId);
+
+    chatRef.GetValueAsync().ContinueWith(task =>
+    {
+        if (task.IsCompleted && task.Result.Exists)
+        {
+            foreach (var child in task.Result.Children)
+            {
+                var dict = child.Value as Dictionary<string, object>;
+                if (dict != null && dict.ContainsKey("from") && dict["from"].ToString() == "admin")
+                {
+                    chatRef.Child(child.Key).Child("isRead").SetValueAsync(true);
+                }
+            }
+        }
+    });
+}
+
+
+    
+
     private void OnDestroy()
     {
         DetachListener();
