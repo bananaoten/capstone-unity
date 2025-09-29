@@ -51,7 +51,7 @@ public class EmailVerificationManager : MonoBehaviour
     /// <summary>
     /// Sends a verification email and disables the resend button temporarily.
     /// </summary>
-   public void SendVerificationEmail()
+public void SendVerificationEmail()
 {
     if (auth == null)
     {
@@ -88,11 +88,16 @@ public class EmailVerificationManager : MonoBehaviour
             return;
         }
 
-        messageText.text = $"Verification email sent to {user.Email}. Please check your Spam or Inbox";
+        messageText.text =
+            $"A verification email has been sent to {user.Email}.\n\n" +
+            "Please check your Inbox or Spam folder and follow the instructions to verify your account.\n\n" +
+            "If the email is in Spam, mark it as 'Not Spam' so future emails go to your Inbox.";
+
         StartCoroutine(ReenableButtonAfterDelay(10f));
         Debug.Log("Verification email sent successfully.");
     });
 }
+
 
     public void StartVerificationTimeout()
     {

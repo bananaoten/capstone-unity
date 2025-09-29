@@ -173,57 +173,38 @@ public class CoBorrowerFormUpdated : MonoBehaviour
         return false;
     }
 
-    public bool ValidateCoBorrowerInfo()
-    {
-        // Check if the user filled out any co-borrower fields
-        bool hasAnyInput = HasAnyInput(
-            lastName, firstName, middleName, birthday, age, placeOfBirth, 
-            citizenship, religion, contactNumber, facebookAccount,
-            presentAddress, permanentAddress, employerName, businessNature, 
-            positionAndDepartment, employerAddress, officeTelephone,
-            emailAddress, contactPerson, tinId, pagibigNo
-        );
+   public bool ValidateCoBorrowerInfo()
+{
+    // 🔹 Always require all fields, no skipping
+    if (!ValidateField("Last Name", lastName)) return false;
+    if (!ValidateField("First Name", firstName)) return false;
+    if (!ValidateField("Middle Name", middleName)) return false;
+    if (!ValidateField("Birthday", birthday)) return false;
+    if (!ValidateField("Age", age)) return false;
+    if (!ValidateField("Place of Birth", placeOfBirth)) return false;
+    if (!ValidateDropdown("Gender", genderDropdown)) return false;
+    if (!ValidateDropdown("Civil Status", coBorrowerCivilStatusDropdown)) return false;
+    if (!ValidateField("Citizenship", citizenship)) return false;
+    if (!ValidateField("Religion", religion)) return false;
+    if (!ValidateField("Contact Number", contactNumber)) return false;
+    if (!ValidateField("Facebook Account", facebookAccount)) return false;
+    if (!ValidateField("Present Address", presentAddress)) return false;
+    if (!ValidateField("Permanent Address", permanentAddress)) return false;
+    if (!ValidateField("Employer Name", employerName)) return false;
+    if (!ValidateField("Nature of Business", businessNature)) return false;
+    if (!ValidateField("Position and Department", positionAndDepartment)) return false;
+    if (!ValidateField("Employer Address", employerAddress)) return false;
+    if (!ValidateField("Office Telephone", officeTelephone)) return false;
+    if (!ValidateField("Email Address", emailAddress)) return false;
+    if (!ValidateField("Contact Person", contactPerson)) return false;
+    if (!ValidateField("TIN ID", tinId)) return false;
+    if (!ValidateField("PAGIBIG No", pagibigNo)) return false;
+    if (!ValidateDropdown("Source of Income", sourceOfIncomeDropdown)) return false;
 
-        // Also check dropdowns separately (value != 0 means user changed it)
-        hasAnyInput |= (genderDropdown != null && genderDropdown.value != 0);
-        hasAnyInput |= (coBorrowerCivilStatusDropdown != null && coBorrowerCivilStatusDropdown.value != 0);
-        hasAnyInput |= (sourceOfIncomeDropdown != null && sourceOfIncomeDropdown.value != 0);
+    ClearValidation();
+    return true;
+}
 
-        if (!hasAnyInput)
-        {
-            // If everything is empty, allow to proceed
-            ClearValidation();
-            Debug.Log("✅ No co-borrower info provided. Skipping validation.");
-            return true;
-        }
-
-        // If something is filled, validate all required fields
-        if (!ValidateField("Last Name", lastName)) return false;
-        if (!ValidateField("First Name", firstName)) return false;
-        if (!ValidateField("Middle Name", middleName)) return false;
-        if (!ValidateField("Birthday", birthday)) return false;
-        if (!ValidateField("Age", age)) return false;
-        if (!ValidateField("Place of Birth", placeOfBirth)) return false;
-        if (!ValidateDropdown("Gender", genderDropdown)) return false;
-        if (!ValidateDropdown("Civil Status", coBorrowerCivilStatusDropdown)) return false;
-        if (!ValidateField("Citizenship", citizenship)) return false;
-        if (!ValidateField("Religion", religion)) return false;
-        if (!ValidateField("Contact Number", contactNumber)) return false;
-        if (!ValidateField("Facebook Account", facebookAccount)) return false;
-        if (!ValidateField("Present Address", presentAddress)) return false;
-        if (!ValidateField("Permanent Address", permanentAddress)) return false;
-        if (!ValidateField("Employer Name", employerName)) return false;
-        if (!ValidateField("Nature of Business", businessNature)) return false;
-        if (!ValidateField("Position and Department", positionAndDepartment)) return false;
-        if (!ValidateField("Employer Address", employerAddress)) return false;
-        if (!ValidateField("Office Telephone", officeTelephone)) return false;
-        if (!ValidateField("Email Address", emailAddress)) return false;
-        if (!ValidateField("Contact Person", contactPerson)) return false;
-        if (!ValidateField("TIN ID", tinId)) return false;
-
-        ClearValidation();
-        return true;
-    }
 
     // Validate Co-Borrower Spouse panel by delegating
     public bool ValidateCoBorrowerSpousePanel()

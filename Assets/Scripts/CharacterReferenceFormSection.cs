@@ -32,10 +32,20 @@ public class CharacterReferenceFormSection : MonoBehaviour
 
     public bool ValidateCharacterReferences()
     {
-        // Validate each character reference block
-        if (!ValidateSingleReference(1, lastName1, firstName1, middleName1, contactNumber1, facebookAccount1, address1)) return false;
-        if (!ValidateSingleReference(2, lastName2, firstName2, middleName2, contactNumber2, facebookAccount2, address2)) return false;
-        if (!ValidateSingleReference(3, lastName3, firstName3, middleName3, contactNumber3, facebookAccount3, address3)) return false;
+        bool hasAnyReference = false;
+
+        // Check all 3 references
+        if (!ValidateSingleReference(1, lastName1, firstName1, middleName1, contactNumber1, facebookAccount1, address1, ref hasAnyReference)) return false;
+        if (!ValidateSingleReference(2, lastName2, firstName2, middleName2, contactNumber2, facebookAccount2, address2, ref hasAnyReference)) return false;
+        if (!ValidateSingleReference(3, lastName3, firstName3, middleName3, contactNumber3, facebookAccount3, address3, ref hasAnyReference)) return false;
+
+        // Rule: at least one must exist
+        if (!hasAnyReference)
+        {
+            SetValidationMessage("At least one character reference is required.");
+            Debug.LogWarning("❌ Validation failed: No character reference provided.");
+            return false;
+        }
 
         ClearValidation();
         return true;
@@ -43,17 +53,20 @@ public class CharacterReferenceFormSection : MonoBehaviour
 
     private bool ValidateSingleReference(int referenceNumber,
         TMP_InputField lastName, TMP_InputField firstName, TMP_InputField middleName,
-        TMP_InputField contactNumber, TMP_InputField facebookAccount, TMP_InputField address)
+        TMP_InputField contactNumber, TMP_InputField facebookAccount, TMP_InputField address,
+        ref bool hasAnyReference)
     {
         bool anyInput = HasAnyInput(lastName, firstName, middleName, contactNumber, facebookAccount, address);
 
         if (!anyInput)
         {
-            // No input in this reference - skip validation for this one
-            return true;
+            return true; // skip empty block
         }
 
-        // If any input, all must be completed:
+        // Mark that at least one exists
+        hasAnyReference = true;
+
+        // Require all fields if one is filled
         if (!ValidateField($"Character Reference {referenceNumber} Last Name", lastName)) return false;
         if (!ValidateField($"Character Reference {referenceNumber} First Name", firstName)) return false;
         if (!ValidateField($"Character Reference {referenceNumber} Middle Name", middleName)) return false;

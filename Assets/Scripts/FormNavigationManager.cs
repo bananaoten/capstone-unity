@@ -365,8 +365,9 @@ public class FormNavigationManager : MonoBehaviour
             case 3:
                 return principalBuyerForm.ValidateCharacterReferencesPanel();
 
-            case 4:
-                return principalBuyerForm.ValidateCoBorrowerPrincipalInfoPanel();
+           case 4: // Co-Borrower
+    return coBorrowerForm != null && coBorrowerForm.ValidateCoBorrowerInfo();
+
 
             case 5:
                 if (coBorrowerCivilStatus == "married")

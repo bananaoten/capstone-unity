@@ -31,7 +31,7 @@ public class PrincipalBuyerFormUpdated : MonoBehaviour
     public TMP_Dropdown genderDropdown;
     public TMP_Dropdown civilStatus;
     public TMP_InputField citizenship;
-    public TMP_InputField religion;             // Optional
+    public TMP_InputField religion;             
     public TMP_InputField contactNumber;
     public TMP_InputField facebookAccount;      // Optional
     public TMP_InputField presentAddress;
@@ -44,7 +44,7 @@ public class PrincipalBuyerFormUpdated : MonoBehaviour
     public TMP_InputField emailAddress;
     public TMP_InputField contactPerson;        // Optional
     public TMP_InputField tinId;
-    public TMP_InputField pagibigNo;            // Optional unless using Pag-IBIG financing
+    public TMP_InputField pagibigNo;            
     public TMP_Dropdown sourceOfIncomeDropdown; // Optional
 
     public string PrincipalBuyerCivilStatus => civilStatus.options[civilStatus.value].text;
@@ -152,49 +152,44 @@ public class PrincipalBuyerFormUpdated : MonoBehaviour
     }
 
     public bool ValidatePrincipalBuyerPanel()
-    {
-        // ✅ Required fields
-        if (!ValidateField("Last Name", lastName)) return false;
-        if (!ValidateField("First Name", firstName)) return false;
-        if (!ValidateField("Middle Name", middleName)) return false;
-        if (!ValidateField("Birthday", birthday)) return false;
-        if (!ValidateField("Age", age)) return false;
-        if (!ValidateField("Place of Birth", placeOfBirth)) return false;
-        if (!ValidateDropdown("Gender", genderDropdown)) return false;
-        if (!ValidateDropdown("Civil Status", civilStatus)) return false;
-        if (!ValidateField("Citizenship", citizenship)) return false;
-        if (!ValidateField("Contact Number", contactNumber)) return false;
-        if (!ValidateField("Present Address", presentAddress)) return false;
-        if (!ValidateField("Permanent Address", permanentAddress)) return false;
-        if (!ValidateField("Employer Name", employerName)) return false;
-        if (!ValidateField("Nature of Business", businessNature)) return false;
-        if (!ValidateField("Position and Department", positionAndDepartment)) return false;
-        if (!ValidateField("Employer Address", employerAddress)) return false;
-        if (!ValidateField("Email Address", emailAddress)) return false;
-        if (!ValidateField("TIN ID", tinId)) return false;
+{
+    // ✅ Required fields
+    if (!ValidateField("Last Name", lastName)) return false;
+    if (!ValidateField("First Name", firstName)) return false;
+    if (!ValidateField("Middle Name", middleName)) return false;
+    if (!ValidateField("Birthday", birthday)) return false;
+    if (!ValidateField("Age", age)) return false;
+    if (!ValidateField("Place of Birth", placeOfBirth)) return false;
+    if (!ValidateDropdown("Gender", genderDropdown)) return false;
+    if (!ValidateDropdown("Civil Status", civilStatus)) return false;
+    if (!ValidateField("Citizenship", citizenship)) return false;
+    if (!ValidateField("Religion", religion)) return false;   // 🔹 NOW REQUIRED
+    if (!ValidateField("Contact Number", contactNumber)) return false;
+    if (!ValidateField("Present Address", presentAddress)) return false;
+    if (!ValidateField("Permanent Address", permanentAddress)) return false;
+    if (!ValidateField("Employer Name", employerName)) return false;
+    if (!ValidateField("Nature of Business", businessNature)) return false;
+    if (!ValidateField("Position and Department", positionAndDepartment)) return false;
+    if (!ValidateField("Employer Address", employerAddress)) return false;
+    if (!ValidateField("Email Address", emailAddress)) return false;
+    if (!ValidateField("TIN ID", tinId)) return false;
 
-        // 🟡 Optional fields (skip validation if empty)
-        if (!string.IsNullOrWhiteSpace(religion?.text))
-            Debug.Log("[Info] Religion provided: " + religion.text);
+    // 🟡 Optional fields (skip validation if empty)
+    if (!string.IsNullOrWhiteSpace(facebookAccount?.text))
+        Debug.Log("[Info] Facebook account provided.");
 
-        if (!string.IsNullOrWhiteSpace(facebookAccount?.text))
-            Debug.Log("[Info] Facebook account provided.");
+    if (!string.IsNullOrWhiteSpace(contactPerson?.text))
+        Debug.Log("[Info] Contact person provided.");
 
-        if (!string.IsNullOrWhiteSpace(contactPerson?.text))
-            Debug.Log("[Info] Contact person provided.");
+    if (!string.IsNullOrWhiteSpace(officeTelephone?.text))
+        Debug.Log("[Info] Office telephone provided.");
 
-        if (!string.IsNullOrWhiteSpace(officeTelephone?.text))
-            Debug.Log("[Info] Office telephone provided.");
+    if (sourceOfIncomeDropdown != null && sourceOfIncomeDropdown.value > 0)
+        Debug.Log("[Info] Source of Income selected: " + sourceOfIncomeDropdown.options[sourceOfIncomeDropdown.value].text);
 
-        if (pagibigNo != null && !string.IsNullOrWhiteSpace(pagibigNo.text))
-            Debug.Log("[Info] PAGIBIG No. provided.");
-
-        if (sourceOfIncomeDropdown != null && sourceOfIncomeDropdown.value > 0)
-            Debug.Log("[Info] Source of Income selected: " + sourceOfIncomeDropdown.options[sourceOfIncomeDropdown.value].text);
-
-        ClearValidation();
-        return true;
-    }
+    ClearValidation();
+    return true;
+}
 
     private bool ValidateField(string fieldName, TMP_InputField input)
     {
