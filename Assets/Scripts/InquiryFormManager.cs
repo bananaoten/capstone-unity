@@ -25,7 +25,8 @@ public class InquiryFormManager : MonoBehaviour
     public GameObject messagingPanelPage;
 
     [Header("UI Prefabs")]
-    public GameObject inquiryFormPrefab;   // Inquiry form prefab
+    public GameObject lancrisInquiryFormPrefab;
+    public GameObject treelaneInquiryFormPrefab;
 
     // ✅ Appointment system references
     [Header("Appointment Prefabs - Treelane")]
@@ -76,32 +77,31 @@ public class InquiryFormManager : MonoBehaviour
         }
         else
         {
-            if (inquiryFormPrefab != null)
-                inquiryFormPrefab.SetActive(true);
+            // Show forms if user not logged in
+            if (lancrisInquiryFormPrefab != null)
+                lancrisInquiryFormPrefab.SetActive(true);
+
+            if (treelaneInquiryFormPrefab != null)
+                treelaneInquiryFormPrefab.SetActive(true);
         }
     }
 
     private void DetectSubdivision()
     {
-        if (inquiryFormPrefab != null)
+        if (lancrisInquiryFormPrefab != null && lancrisInquiryFormPrefab.activeSelf)
         {
-            string prefabName = inquiryFormPrefab.name.ToLower();
-
-            if (prefabName.Contains("lancris"))
-            {
-                subdivision = "lancris";
-                usePropertyId = true;
-            }
-            else if (prefabName.Contains("treelane"))
-            {
-                subdivision = "treelane";
-                usePropertyId = false;
-            }
-            else
-            {
-                subdivision = "default";
-                usePropertyId = false;
-            }
+            subdivision = "lancris";
+            usePropertyId = true;
+        }
+        else if (treelaneInquiryFormPrefab != null && treelaneInquiryFormPrefab.activeSelf)
+        {
+            subdivision = "treelane";
+            usePropertyId = false;
+        }
+        else
+        {
+            subdivision = "default";
+            usePropertyId = false;
         }
 
         Debug.Log($"[InquiryFormManager] Auto-detected subdivision={subdivision}, usePropertyId={usePropertyId}");
@@ -117,8 +117,12 @@ public class InquiryFormManager : MonoBehaviour
 
             if (!task.Result.Exists)
             {
-                if (inquiryFormPrefab != null)
-                    inquiryFormPrefab.SetActive(true);
+                if (subdivisionKey == "lancris" && lancrisInquiryFormPrefab != null)
+                    lancrisInquiryFormPrefab.SetActive(true);
+
+                if (subdivisionKey == "treelane" && treelaneInquiryFormPrefab != null)
+                    treelaneInquiryFormPrefab.SetActive(true);
+
                 return;
             }
 
@@ -167,8 +171,11 @@ public class InquiryFormManager : MonoBehaviour
             state.isDeclined = false;
             state.assignedAgentUid = agentUid;
 
-            if (inquiryFormPrefab != null)
-                inquiryFormPrefab.SetActive(false);
+            if (subdivisionKey == "lancris" && lancrisInquiryFormPrefab != null)
+                lancrisInquiryFormPrefab.SetActive(false);
+
+            if (subdivisionKey == "treelane" && treelaneInquiryFormPrefab != null)
+                treelaneInquiryFormPrefab.SetActive(false);
 
             if (messagingPanelPage != null)
                 messagingPanelPage.SetActive(true);
@@ -176,12 +183,8 @@ public class InquiryFormManager : MonoBehaviour
             if (resubmitButton != null)
                 resubmitButton.SetActive(false);
 
-            // ✅ Appointment logic
             ToggleAppointments(subdivisionKey, true);
-
-            // ✅ Reservation logic
             CheckReservationAccess();
-
             OpenChatWithAgent(agentUid);
         }
         else if (status == "pending")
@@ -190,20 +193,20 @@ public class InquiryFormManager : MonoBehaviour
             state.isDeclined = false;
             state.assignedAgentUid = null;
 
-            if (inquiryFormPrefab != null)
-                inquiryFormPrefab.SetActive(true);
+            if (subdivisionKey == "lancris" && lancrisInquiryFormPrefab != null)
+                lancrisInquiryFormPrefab.SetActive(true);
+
+            if (subdivisionKey == "treelane" && treelaneInquiryFormPrefab != null)
+                treelaneInquiryFormPrefab.SetActive(true);
 
             if (resubmitButton != null)
                 resubmitButton.SetActive(false);
 
-            // ✅ Appointment logic
             ToggleAppointments(subdivisionKey, false);
-
-            // ✅ Reservation logic
             CheckReservationAccess();
 
             if (!initialCheck)
-                ShowError($"⏳ Your {subdivisionKey} inquiry is pending. Waiting for agent...");
+                ShowError($"⏳ Your {subdivisionKey} inquiry is pending. Waiting for agent...", pending: true);
         }
         else if (status == "declined")
         {
@@ -211,20 +214,20 @@ public class InquiryFormManager : MonoBehaviour
             state.isDeclined = true;
             state.assignedAgentUid = null;
 
-            if (inquiryFormPrefab != null)
-                inquiryFormPrefab.SetActive(true);
+            if (subdivisionKey == "lancris" && lancrisInquiryFormPrefab != null)
+                lancrisInquiryFormPrefab.SetActive(true);
+
+            if (subdivisionKey == "treelane" && treelaneInquiryFormPrefab != null)
+                treelaneInquiryFormPrefab.SetActive(true);
 
             if (resubmitButton != null)
                 resubmitButton.SetActive(true);
 
-            // ✅ Appointment logic
             ToggleAppointments(subdivisionKey, false);
-
-            // ✅ Reservation logic
             CheckReservationAccess();
 
             if (!initialCheck)
-                ShowError($"❌ Your {subdivisionKey} inquiry was declined. Please resubmit.");
+                ShowError("❌ Agent declined your inquiry");
         }
 
         inquiryStates[subdivisionKey] = state;
@@ -250,7 +253,6 @@ public class InquiryFormManager : MonoBehaviour
         }
     }
 
-    // ✅ Reservation check: hide blocker if ANY inquiry is accepted
     private void CheckReservationAccess()
     {
         bool hasAccepted = false;
@@ -271,6 +273,9 @@ public class InquiryFormManager : MonoBehaviour
     {
         errorText.text = "";
 
+        // ✅ Detect subdivision again at submission
+        DetectSubdivision();
+
         string fullName = fullNameInput.text.Trim();
         string email = emailInput.text.Trim();
         string phone = phoneInput.text.Trim();
@@ -283,6 +288,8 @@ public class InquiryFormManager : MonoBehaviour
         if (string.IsNullOrEmpty(phone) || !Regex.IsMatch(phone, @"^[0-9]+$")) { ShowError("Phone must contain numbers only."); return; }
         if (string.IsNullOrEmpty(message)) { ShowError("Additional message is required."); return; }
         if (auth.CurrentUser == null) { ShowError("You must be logged in to submit an inquiry."); return; }
+
+        Debug.Log($"[SubmitInquiry] Writing to subdivision={subdivision}");
 
         string inquiryId = dbRef.Child("inquiries").Child(subdivision).Push().Key;
 
@@ -322,11 +329,14 @@ public class InquiryFormManager : MonoBehaviour
             });
     }
 
-    private void ShowError(string msg, bool success = false)
+    private void ShowError(string msg, bool success = false, bool pending = false)
     {
         if (errorText != null)
         {
-            errorText.color = success ? Color.green : Color.red;
+            if (success) errorText.color = Color.green;
+            else if (pending) errorText.color = new Color(0.2f, 0.6f, 0.2f); // softer green for neutral pending
+            else errorText.color = Color.red;
+
             errorText.text = msg;
         }
     }
@@ -358,7 +368,7 @@ public class InquiryFormManager : MonoBehaviour
         public DatabaseReference inquiryRef;
         public bool isAccepted;
         public bool isDeclined;
-        public string assignedAgentUid;
+        public string assignedAgentUid; 
     }
 }
 

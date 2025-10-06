@@ -3,6 +3,7 @@
     "com.google.xr.cardboard": "https://github.com/googlevr/cardboard-xr-plugin.git",
     "com.unity.2d.sprite": "1.0.0",
     "com.unity.collab-proxy": "2.7.1",
+    "com.unity.device-simulator.devices": "1.0.0",
     "com.unity.feature.development": "1.0.1",
     "com.unity.mobile.android-logcat": "1.4.5",
     "com.unity.textmeshpro": "3.0.7",

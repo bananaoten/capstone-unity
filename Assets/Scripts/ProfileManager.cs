@@ -21,7 +21,8 @@ public class ProfileManager : MonoBehaviour
     public TMP_InputField contactNumberInput;
 
     [Header("Input Fields (Profile Update)")]
-    public TMP_InputField updateFullNameInput;
+    public TMP_InputField updateFirstNameInput;
+    public TMP_InputField updateLastNameInput;
     public TMP_InputField oldPasswordInput;
     public TMP_InputField newPasswordInput;
 
@@ -165,13 +166,13 @@ public class ProfileManager : MonoBehaviour
             return;
         }
 
-        string fullName = firstName + " " + lastName;
         string userId = auth.CurrentUser.UserId;
         string email = auth.CurrentUser.Email;
 
         var profileData = new UserProfileData()
         {
-            FullName = fullName,
+            FirstName = firstName,
+            LastName = lastName,
             ContactNumber = contact,
             Email = email
         };
@@ -224,7 +225,8 @@ public class ProfileManager : MonoBehaviour
 
                 fullNameText.text = data.FullName;
                 contactNumberText.text = data.ContactNumber;
-                updateFullNameInput.text = data.FullName;
+                updateFirstNameInput.text = data.FirstName;
+                updateLastNameInput.text = data.LastName;
 
                 // Save locally
                 SaveProfileDataToLocal(data);
@@ -244,33 +246,10 @@ public class ProfileManager : MonoBehaviour
         updateValidationText.text = "";
         updateValidationText.color = Color.red;
 
-        string fullName = updateFullNameInput.text.Trim();
+        string firstName = updateFirstNameInput.text.Trim();
+        string lastName = updateLastNameInput.text.Trim();
         string oldPassword = oldPasswordInput.text;
         string newPassword = newPasswordInput.text;
-
-        if (string.IsNullOrEmpty(fullName))
-        {
-            updateValidationText.text = "Full Name cannot be empty.";
-            return;
-        }
-
-        if (string.IsNullOrEmpty(oldPassword) || string.IsNullOrEmpty(newPassword))
-        {
-            updateValidationText.text = "Both old and new password fields are required.";
-            return;
-        }
-
-        if (oldPassword == newPassword)
-        {
-            updateValidationText.text = "New password must be different from the old password.";
-            return;
-        }
-
-        if (newPassword.Length < 8)
-        {
-            updateValidationText.text = "New password must be at least 8 characters.";
-            return;
-        }
 
         FirebaseUser user = auth.CurrentUser;
         if (user == null)
@@ -279,50 +258,69 @@ public class ProfileManager : MonoBehaviour
             return;
         }
 
-        var credential = Firebase.Auth.EmailAuthProvider.GetCredential(user.Email, oldPassword);
-
-        try
+        // ✅ Case 1: Update just names
+        if (!string.IsNullOrEmpty(firstName) || !string.IsNullOrEmpty(lastName))
         {
-            await user.ReauthenticateAsync(credential);
-        }
-        catch
-        {
-            updateValidationText.text = "Old password is incorrect.";
-            return;
-        }
-
-        try
-        {
-            await user.UpdatePasswordAsync(newPassword);
-
-            string userId = user.UserId;
-            var reference = FirebaseDatabase.DefaultInstance.RootReference;
-
             var profileUpdate = new UserProfileData()
             {
-                FullName = fullName,
+                FirstName = firstName,
+                LastName = lastName,
                 ContactNumber = contactNumberText.text,
                 Email = user.Email
             };
 
-            string json = JsonUtility.ToJson(profileUpdate);
-            await reference.Child("users").Child(userId).Child("profile").SetRawJsonValueAsync(json);
+            try
+            {
+                string json = JsonUtility.ToJson(profileUpdate);
+                var reference = FirebaseDatabase.DefaultInstance.RootReference;
+                await reference.Child("users").Child(user.UserId).Child("profile").SetRawJsonValueAsync(json);
 
-            fullNameText.text = fullName;
-            updateFullNameInput.text = fullName;
+                fullNameText.text = profileUpdate.FullName;
+                updateFirstNameInput.text = profileUpdate.FirstName;
+                updateLastNameInput.text = profileUpdate.LastName;
 
-            // Save locally
-            SaveProfileDataToLocal(profileUpdate);
+                SaveProfileDataToLocal(profileUpdate);
+                SyncProfileToPrincipalBuyerForm(profileUpdate);
 
-            // 👉 Sync to Principal Buyer form
-            SyncProfileToPrincipalBuyerForm(profileUpdate);
-
-            updateValidationText.color = Color.green;
-            updateValidationText.text = "Profile updated successfully!";
+                updateValidationText.color = Color.green;
+                updateValidationText.text = "Profile updated successfully!";
+            }
+            catch (System.Exception ex)
+            {
+                updateValidationText.text = "Failed to update: " + ex.Message;
+            }
         }
-        catch (System.Exception ex)
+
+        // ✅ Case 2: Update password
+        if (!string.IsNullOrEmpty(oldPassword) && !string.IsNullOrEmpty(newPassword))
         {
-            updateValidationText.text = "Failed to update: " + ex.Message;
+            if (oldPassword == newPassword)
+            {
+                updateValidationText.text = "New password must be different from the old password.";
+                return;
+            }
+
+            if (newPassword.Length < 8)
+            {
+                updateValidationText.text = "New password must be at least 8 characters.";
+                return;
+            }
+
+            var credential = Firebase.Auth.EmailAuthProvider.GetCredential(user.Email, oldPassword);
+
+            try
+            {
+                await user.ReauthenticateAsync(credential);
+                await user.UpdatePasswordAsync(newPassword);
+
+                updateValidationText.color = Color.green;
+                updateValidationText.text = "Password updated successfully!";
+            }
+            catch
+            {
+                updateValidationText.text = "Old password is incorrect.";
+                return;
+            }
         }
     }
 
@@ -332,7 +330,6 @@ public class ProfileManager : MonoBehaviour
         contactNumberInput.text = new string(System.Array.FindAll(value.ToCharArray(), char.IsDigit));
     }
 
-    // ✅ PH number validation: must start with "09" and be exactly 11 digits
     private bool IsValidPHContact(string contact)
     {
         return System.Text.RegularExpressions.Regex.IsMatch(contact, @"^(09)\d{9}$");
@@ -346,24 +343,31 @@ public class ProfileManager : MonoBehaviour
         if (welcomePage != null) welcomePage.SetActive(false);
     }
 
-    // Save profile data locally in PlayerPrefs
     private void SaveProfileDataToLocal(UserProfileData data)
     {
+        PlayerPrefs.SetString("FirstName", data.FirstName);
+        PlayerPrefs.SetString("LastName", data.LastName);
         PlayerPrefs.SetString("FullName", data.FullName);
         PlayerPrefs.SetString("ContactNumber", data.ContactNumber);
         PlayerPrefs.Save();
     }
 
-    // Load profile data from PlayerPrefs and update UI
     private void LoadProfileDataFromLocal()
     {
+        string firstName = PlayerPrefs.GetString("FirstName", "");
+        string lastName = PlayerPrefs.GetString("LastName", "");
         string fullName = PlayerPrefs.GetString("FullName", "");
         string contactNumber = PlayerPrefs.GetString("ContactNumber", "");
 
-        if (!string.IsNullOrEmpty(fullName))
+        if (!string.IsNullOrEmpty(firstName) || !string.IsNullOrEmpty(lastName))
+        {
+            fullNameText.text = $"{firstName} {lastName}".Trim();
+            updateFirstNameInput.text = firstName;
+            updateLastNameInput.text = lastName;
+        }
+        else if (!string.IsNullOrEmpty(fullName))
         {
             fullNameText.text = fullName;
-            updateFullNameInput.text = fullName;
         }
 
         if (!string.IsNullOrEmpty(contactNumber))
@@ -371,16 +375,16 @@ public class ProfileManager : MonoBehaviour
             contactNumberText.text = contactNumber;
         }
 
-        if (!string.IsNullOrEmpty(fullName) || !string.IsNullOrEmpty(contactNumber))
+        if (!string.IsNullOrEmpty(firstName) || !string.IsNullOrEmpty(lastName) || !string.IsNullOrEmpty(contactNumber))
         {
             var localData = new UserProfileData
             {
-                FullName = fullName,
+                FirstName = firstName,
+                LastName = lastName,
                 ContactNumber = contactNumber,
-                Email = "" // Email isn’t stored locally
+                Email = ""
             };
 
-            // 👉 Sync to Principal Buyer form
             SyncProfileToPrincipalBuyerForm(localData);
         }
     }
@@ -396,14 +400,10 @@ public class ProfileManager : MonoBehaviour
         if (principalBuyerForm != null)
         {
             if (principalBuyerForm.firstName != null)
-                principalBuyerForm.firstName.text = data.FullName.Split(' ')[0]; // First word as First Name
+                principalBuyerForm.firstName.text = data.FirstName;
 
             if (principalBuyerForm.lastName != null)
-            {
-                string[] nameParts = data.FullName.Split(' ');
-                if (nameParts.Length > 1)
-                    principalBuyerForm.lastName.text = nameParts[nameParts.Length - 1]; // Last word as Last Name
-            }
+                principalBuyerForm.lastName.text = data.LastName;
 
             if (principalBuyerForm.contactNumber != null)
                 principalBuyerForm.contactNumber.text = data.ContactNumber;
@@ -414,7 +414,10 @@ public class ProfileManager : MonoBehaviour
 [System.Serializable]
 public class UserProfileData
 {
-    public string FullName;
+    public string FirstName;
+    public string LastName;
     public string ContactNumber;
     public string Email;
+
+    public string FullName => $"{FirstName} {LastName}".Trim();
 }
