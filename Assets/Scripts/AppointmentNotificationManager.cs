@@ -1,21 +1,54 @@
 using UnityEngine;
+using Firebase;
+using Firebase.Auth;
 using Firebase.Database;
 using System;
+using System.Collections;
 
 public class AppointmentNotificationManager : MonoBehaviour
 {
     [Header("UI")]
-    public Transform notificationContainer;   // ✅ Assign: Content of ScrollView
+    public Transform notificationContainer;   // ✅ Assign: ScrollView Content
     public GameObject notificationPrefab;     // ✅ Assign: Prefab with NotificationItem script
 
     private DatabaseReference dbRef;
+    private FirebaseAuth auth;
 
-    void Start()
+    private void Awake()
     {
+        auth = FirebaseAuth.DefaultInstance;
+    }
+
+    private void Start()
+    {
+        StartCoroutine(InitializeFirebase());
+    }
+
+    private IEnumerator InitializeFirebase()
+    {
+        var check = FirebaseApp.CheckAndFixDependenciesAsync();
+        yield return new WaitUntil(() => check.IsCompleted);
+
+        if (check.Result != DependencyStatus.Available)
+        {
+            Debug.LogError("❌ Firebase dependencies not available: " + check.Result);
+            yield break;
+        }
+
+        // ✅ Wait for user to be logged in before listening
+        yield return new WaitUntil(() => auth.CurrentUser != null);
+
         dbRef = FirebaseDatabase.DefaultInstance.RootReference;
 
-        // Listen for appointment changes
-        dbRef.Child("appointments").ValueChanged += OnAppointmentsChanged;
+        string currentUserId = auth.CurrentUser.UserId;
+        Debug.Log("✅ Listening for appointment updates for user: " + currentUserId);
+
+        // Listen only to this user's appointments
+        FirebaseDatabase.DefaultInstance
+            .GetReference("appointments")
+            .OrderByChild("userUid")
+            .EqualTo(currentUserId)
+            .ValueChanged += OnAppointmentsChanged;
     }
 
     private void OnAppointmentsChanged(object sender, ValueChangedEventArgs args)
@@ -41,7 +74,8 @@ public class AppointmentNotificationManager : MonoBehaviour
 
             if (notif)
             {
-                // Determine title/description/type
+                Debug.Log($"🔔 Notification detected for appointment {child.Key}, status = {status}");
+
                 string title = "";
                 string description = "";
                 NotificationItem.NotificationType type = NotificationItem.NotificationType.Pending;
@@ -61,14 +95,14 @@ public class AppointmentNotificationManager : MonoBehaviour
                 else
                 {
                     title = "Appointment Update";
-                    description = "Your appointment status changed.";
+                    description = "Your appointment status has changed.";
                     type = NotificationItem.NotificationType.Pending;
                 }
 
-                // Add notification UI
+                // Add notification to UI
                 AddNotification(title, description, type, DateTime.UtcNow);
 
-                // Reset notification so it only shows once
+                // Reset notification so it doesn’t re-trigger
                 dbRef.Child("appointments").Child(child.Key).Child("notification").SetValueAsync(false);
             }
         }
@@ -84,7 +118,6 @@ public class AppointmentNotificationManager : MonoBehaviour
 
         GameObject notifGO = Instantiate(notificationPrefab, notificationContainer);
 
-        // Use NotificationItem component
         NotificationItem notifItem = notifGO.GetComponent<NotificationItem>();
         if (notifItem != null)
         {
