@@ -3,6 +3,8 @@ using TMPro;
 using Firebase.Database;
 using Firebase.Auth;
 using System.Threading.Tasks;
+using System;
+using System.Collections.Generic;
 
 public class ModelViewManager : MonoBehaviour
 {
@@ -54,14 +56,14 @@ public class ModelViewManager : MonoBehaviour
 
     public async void OnClickLancrisCornerModel()
     {
-        await IncrementViewCount("lancriscorner", viewTextCorner);
+        await IncrementViewCount("lancrisdeluxe", viewTextCorner);
         userHomeLancrisCanvas.SetActive(false);
         propertyDetailsLancrisCornerCanvas.SetActive(true);
     }
 
     public async void OnClickLancrisMiddleModel()
     {
-        await IncrementViewCount("lancrismiddle", viewTextMiddle);
+        await IncrementViewCount("lancrisstandard", viewTextMiddle);
         userHomeLancrisCanvas.SetActive(false);
         propertyDetailsLancrisMiddleCanvas.SetActive(true);
     }
@@ -83,6 +85,26 @@ public class ModelViewManager : MonoBehaviour
 
         if (viewText != null)
             viewText.text = $"Views: {currentViews}";
+
+        // Push analytics event so React dashboard can read per-event data
+        try
+        {
+            var analyticsRef = dbReference.Child("analytics").Child(modelId).Child("views");
+            string pushKey = analyticsRef.Push().Key;
+            if (!string.IsNullOrEmpty(pushKey))
+            {
+                var eventData = new Dictionary<string, object>
+                {
+                    { "timestamp", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
+                    { "userId", auth?.CurrentUser?.UserId ?? "anonymous" }
+                };
+                await analyticsRef.Child(pushKey).SetValueAsync(eventData);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"Failed to push analytics view event for {modelId}: {ex.Message}");
+        }
     }
 
     private async Task LoadViewCount(string modelId, TMP_Text viewText)
@@ -100,7 +122,7 @@ public class ModelViewManager : MonoBehaviour
 
     private async Task LoadInitialViewCounts()
     {
-        await LoadViewCount("lancriscorner", viewTextCorner);
-        await LoadViewCount("lancrismiddle", viewTextMiddle);
+        await LoadViewCount("lancrisdeluxe", viewTextCorner);
+        await LoadViewCount("lancrisstandard", viewTextMiddle);
     }
 }

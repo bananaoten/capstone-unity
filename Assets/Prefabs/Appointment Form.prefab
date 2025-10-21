@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 2867694325915935867}
   - component: {fileID: 4367558691050725765}
   m_Layer: 5
-  m_Name: Text (TMP) (6)
+  m_Name: property to visit
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1507,7 +1507,7 @@ GameObject:
   - component: {fileID: 5215067309820736256}
   - component: {fileID: 5568512313657846826}
   m_Layer: 5
-  m_Name: Text (TMP) (5)
+  m_Name: email address
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1826,8 +1826,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 20}
+  m_AnchoredPosition: {x: 0, y: -19.678394}
+  m_SizeDelta: {x: -0.000091553, y: 59.3569}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2258823567021504998
 MonoBehaviour:
@@ -3791,13 +3791,13 @@ MonoBehaviour:
   firstNameInput: {fileID: 90712692137536361}
   middleNameInput: {fileID: 8193343085707217303}
   lastNameInput: {fileID: 3420999029984656120}
-  contactInput: {fileID: 0}
-  emailInput: {fileID: 0}
+  contactInput: {fileID: 1230456166376659311}
+  emailInput: {fileID: 2430017836387884963}
   propertyDropdown: {fileID: 6184230625593191734}
-  dateInput: {fileID: 0}
-  timeInput: {fileID: 0}
-  messageInput: {fileID: 0}
-  statusText: {fileID: 0}
+  dateInput: {fileID: 4016527370289117583}
+  timeDropdown: {fileID: 4895010732621004386}
+  messageInput: {fileID: 137219796540849809}
+  statusText: {fileID: 6009659236850197220}
 --- !u!1 &3106575080079115276
 GameObject:
   m_ObjectHideFlags: 0
@@ -4341,8 +4341,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 14
-  m_fontSizeBase: 14
+  m_fontSize: 30
+  m_fontSizeBase: 30
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -5179,7 +5179,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 7009748106116980352}
         m_TargetAssemblyTypeName: AppointmentForm, Assembly-CSharp
-        m_MethodName: SubmitAppointment
+        m_MethodName: OnSubmit
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -7079,7 +7079,7 @@ GameObject:
   - component: {fileID: 9129260551277057708}
   - component: {fileID: 6903273779949735537}
   m_Layer: 5
-  m_Name: Text (TMP) (8)
+  m_Name: Preffered time
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -8347,7 +8347,7 @@ GameObject:
   - component: {fileID: 1083193954893694376}
   - component: {fileID: 3717551314557000882}
   m_Layer: 5
-  m_Name: Text (TMP) (9)
+  m_Name: additional message
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

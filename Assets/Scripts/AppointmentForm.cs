@@ -311,12 +311,22 @@ public class AppointmentForm : MonoBehaviour
             if (statusText != null)
             {
                 if (status == "approved")
-                    statusText.text = $"✅ Approved by {agentName}";
+                {
+                    statusText.text = "✅ Approved";
+                    statusText.color = new Color32(0, 200, 0, 255); // green
+                }
                 else if (status == "declined")
+                {
                     statusText.text = "❌ Declined";
+                    statusText.color = Color.red;
+                }
                 else
+                {
                     statusText.text = "⏳ Pending approval...";
+                    statusText.color = new Color32(255, 165, 0, 255); // orange
+                }
             }
         };
     }
-}
+    }
+

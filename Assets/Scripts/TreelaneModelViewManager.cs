@@ -3,6 +3,8 @@ using TMPro;
 using Firebase.Database;
 using Firebase.Auth;
 using System.Threading.Tasks;
+using System;
+using System.Collections.Generic;
 
 public class TreelaneModelViewManager : MonoBehaviour
 {
@@ -15,6 +17,9 @@ public class TreelaneModelViewManager : MonoBehaviour
     public TMP_Text viewTextLeft;
     public TMP_Text viewTextMiddle;
     public TMP_Text viewTextRight;
+
+    private DatabaseReference dbRef;
+    private FirebaseAuth auth;
 
     private void Start()
     {
@@ -30,12 +35,16 @@ public class TreelaneModelViewManager : MonoBehaviour
 
     private void Initialize()
     {
-        if (FirebaseInitializer.Auth.CurrentUser != null)
+        auth = FirebaseInitializer.Auth;
+        dbRef = FirebaseInitializer.Database.RootReference;
+
+        if (auth.CurrentUser != null)
         {
             Debug.Log("Firebase and user ready.");
-            LoadViewCount("treelanecornerleft", viewTextLeft);
-            LoadViewCount("treelanemiddle", viewTextMiddle);
-            LoadViewCount("treelanecornerright", viewTextRight);
+            // load counts
+            _ = LoadViewCount("treelanecornerleft", viewTextLeft);
+            _ = LoadViewCount("treelanemiddle", viewTextMiddle);
+            _ = LoadViewCount("treelanecornerright", viewTextRight);
         }
         else
         {
@@ -66,7 +75,7 @@ public class TreelaneModelViewManager : MonoBehaviour
 
     private async Task IncrementViewCount(string modelId, TMP_Text viewText)
     {
-        var modelRef = FirebaseInitializer.Database.RootReference.Child("models").Child(modelId).Child("views");
+        var modelRef = dbRef.Child("models").Child(modelId).Child("views");
 
         DataSnapshot snapshot = await modelRef.GetValueAsync();
 
@@ -81,11 +90,31 @@ public class TreelaneModelViewManager : MonoBehaviour
 
         if (viewText != null)
             viewText.text = $"Views: {currentViews}";
+
+        // push analytics event so React dashboard can read per-event data
+        try
+        {
+            var analyticsRef = dbRef.Child("analytics").Child(modelId).Child("views");
+            string pushKey = analyticsRef.Push().Key;
+            if (!string.IsNullOrEmpty(pushKey))
+            {
+                var eventData = new Dictionary<string, object>
+                {
+                    { "timestamp", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
+                    { "userId", auth?.CurrentUser?.UserId ?? "anonymous" }
+                };
+                await analyticsRef.Child(pushKey).SetValueAsync(eventData);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"Failed to push analytics view event for {modelId}: {ex.Message}");
+        }
     }
 
-    private async void LoadViewCount(string modelId, TMP_Text viewText)
+    private async Task LoadViewCount(string modelId, TMP_Text viewText)
     {
-        var modelRef = FirebaseInitializer.Database.RootReference.Child("models").Child(modelId).Child("views");
+        var modelRef = dbRef.Child("models").Child(modelId).Child("views");
 
         DataSnapshot snapshot = await modelRef.GetValueAsync();
 

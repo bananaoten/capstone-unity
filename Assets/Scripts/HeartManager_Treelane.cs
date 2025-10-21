@@ -4,6 +4,8 @@ using TMPro;
 using Firebase.Auth;
 using Firebase.Database;
 using System.Threading.Tasks;
+using System;
+using System.Collections.Generic;
 
 public class HeartManager_Treelane : MonoBehaviour
 {
@@ -16,6 +18,7 @@ public class HeartManager_Treelane : MonoBehaviour
         public GameObject propertyDetailsCanvas;
         [HideInInspector] public bool hasHearted;
         [HideInInspector] public int heartCount;
+        [HideInInspector] public string heartAnalyticsKey; // store analytics push key when user hearts
     }
 
     [Header("Treelane Models")]
@@ -113,9 +116,25 @@ public class HeartManager_Treelane : MonoBehaviour
         if (heartCountSnap.Exists) int.TryParse(heartCountSnap.Value.ToString(), out model.heartCount);
         model.heartCountText.text = model.heartCount.ToString();
 
-        // Load user heart state
+        // Load user heart state (backwards compatible with "true" or stored analytics push key)
         var userHeartSnap = await modelRef.Child("heartedUsers").Child(userId).GetValueAsync();
-        model.hasHearted = userHeartSnap.Exists && userHeartSnap.Value.ToString() == "true";
+        model.hasHearted = false;
+        model.heartAnalyticsKey = null;
+
+        if (userHeartSnap.Exists)
+        {
+            var val = userHeartSnap.Value.ToString();
+            if (val == "true")
+            {
+                model.hasHearted = true;
+                model.heartAnalyticsKey = null;
+            }
+            else
+            {
+                model.hasHearted = true;
+                model.heartAnalyticsKey = val; // stored push key
+            }
+        }
 
         UpdateHeartUI(model);
 
@@ -139,15 +158,51 @@ public class HeartManager_Treelane : MonoBehaviour
 
         if (model.hasHearted)
         {
+            // remove heart: decrement count, remove mapping and analytics event if exists
             model.heartCount = Mathf.Max(0, model.heartCount - 1);
             model.hasHearted = false;
+
+            if (!string.IsNullOrEmpty(model.heartAnalyticsKey))
+            {
+                await dbRef.Child("analytics").Child(model.modelId).Child("likes").Child(model.heartAnalyticsKey).RemoveValueAsync();
+            }
+
             await heartedUserRef.RemoveValueAsync();
+            model.heartAnalyticsKey = null;
         }
         else
         {
+            // add heart: increment, create analytics like event and save its key under heartedUsers/{userId}
             model.heartCount += 1;
             model.hasHearted = true;
-            await heartedUserRef.SetValueAsync(true);
+
+            try
+            {
+                var analyticsRef = dbRef.Child("analytics").Child(model.modelId).Child("likes");
+                string pushKey = analyticsRef.Push().Key;
+                if (!string.IsNullOrEmpty(pushKey))
+                {
+                    var eventData = new Dictionary<string, object>
+                    {
+                        { "timestamp", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
+                        { "userId", userId }
+                    };
+                    await analyticsRef.Child(pushKey).SetValueAsync(eventData);
+                    await heartedUserRef.SetValueAsync(pushKey);
+                    model.heartAnalyticsKey = pushKey;
+                }
+                else
+                {
+                    await heartedUserRef.SetValueAsync(true);
+                    model.heartAnalyticsKey = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"Failed to push analytics like event for {model.modelId}: {ex.Message}");
+                await heartedUserRef.SetValueAsync(true);
+                model.heartAnalyticsKey = null;
+            }
         }
 
         await modelRef.Child("heartCount").SetValueAsync(model.heartCount);
