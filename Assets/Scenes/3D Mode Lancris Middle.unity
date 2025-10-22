@@ -226,10 +226,30 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -8000720062663755262, guid: 8c9f5d41ebb11e14f8da7ac4437eefdf, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 01aeb1996762b0d419fcf9b8b6208d0f, type: 2}
+    - target: {fileID: -4400753726807814400, guid: 8c9f5d41ebb11e14f8da7ac4437eefdf, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: bef4c1a05ac8f6348a59691d84e1ca40, type: 2}
+    - target: {fileID: -2244714931619341573, guid: 8c9f5d41ebb11e14f8da7ac4437eefdf, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: bef4c1a05ac8f6348a59691d84e1ca40, type: 2}
     - target: {fileID: 919132149155446097, guid: 8c9f5d41ebb11e14f8da7ac4437eefdf, type: 3}
       propertyPath: m_Name
       value: langcris_middle_lot
       objectReference: {fileID: 0}
+    - target: {fileID: 4676638623684589714, guid: 8c9f5d41ebb11e14f8da7ac4437eefdf, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 01aeb1996762b0d419fcf9b8b6208d0f, type: 2}
+    - target: {fileID: 6752830309442849128, guid: 8c9f5d41ebb11e14f8da7ac4437eefdf, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: bef4c1a05ac8f6348a59691d84e1ca40, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

@@ -2386,13 +2386,41 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 07a170ebd963ea549872917c56bac717, type: 3}
+      propertyPath: m_Materials.Array.data[1]
+      value: 
+      objectReference: {fileID: 2100000, guid: c826d014fdfe67b4fa90fe2d5bab8052, type: 2}
+    - target: {fileID: -7511558181221131132, guid: 07a170ebd963ea549872917c56bac717, type: 3}
       propertyPath: m_Materials.Array.data[10]
       value: 
       objectReference: {fileID: 2100000, guid: 870fe956a9c19b5458c9208de0f01fca, type: 2}
+    - target: {fileID: -4870255817536318842, guid: 07a170ebd963ea549872917c56bac717, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 01aeb1996762b0d419fcf9b8b6208d0f, type: 2}
+    - target: {fileID: -2726294327667710997, guid: 07a170ebd963ea549872917c56bac717, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 7ea59c454fbac004f8aa8e221daf9a48, type: 2}
     - target: {fileID: 919132149155446097, guid: 07a170ebd963ea549872917c56bac717, type: 3}
       propertyPath: m_Name
       value: treelane_left (2)
       objectReference: {fileID: 0}
+    - target: {fileID: 1167539277806494918, guid: 07a170ebd963ea549872917c56bac717, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 7ea59c454fbac004f8aa8e221daf9a48, type: 2}
+    - target: {fileID: 4273731577403080929, guid: 07a170ebd963ea549872917c56bac717, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -4.58
+      objectReference: {fileID: 0}
+    - target: {fileID: 6689773679523959713, guid: 07a170ebd963ea549872917c56bac717, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -4.49
+      objectReference: {fileID: 0}
+    - target: {fileID: 7424902307268665783, guid: 07a170ebd963ea549872917c56bac717, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 01aeb1996762b0d419fcf9b8b6208d0f, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

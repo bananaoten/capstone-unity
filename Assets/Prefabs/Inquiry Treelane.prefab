@@ -2731,7 +2731,7 @@ MonoBehaviour:
   m_fontSizeMax: 72
   m_fontStyle: 0
   m_HorizontalAlignment: 1
-  m_VerticalAlignment: 512
+  m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_wordSpacing: 0
@@ -3291,10 +3291,18 @@ MonoBehaviour:
   messageInput: {fileID: 2692462451756057600}
   errorText: {fileID: 8495121072351806205}
   exitButton: {fileID: 4429648214020641946}
+  resubmitButton: {fileID: 0}
   messagePagePanel: {fileID: 0}
   messagingPanelPage: {fileID: 0}
-  inquiryFormPrefab: {fileID: 0}
+  lancrisInquiryFormPrefab: {fileID: 0}
+  treelaneInquiryFormPrefab: {fileID: 0}
+  treelaneAppointmentForms: []
+  treelaneBlockers: []
+  lancrisAppointmentForms: []
+  lancrisBlockers: []
+  reservationBlocker: {fileID: 0}
   subdivision: treelane
+  usePropertyId: 0
 --- !u!1 &5651076014384581758
 GameObject:
   m_ObjectHideFlags: 0

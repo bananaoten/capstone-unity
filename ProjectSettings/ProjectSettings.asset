@@ -14,7 +14,7 @@ PlayerSettings:
   accelerometerFrequency: 60
   companyName: cecs
   productName: Walk In
-  defaultCursor: {fileID: 2800000, guid: 884a9eb796cb5e6488bfd893abbee7c2, type: 3}
+  defaultCursor: {fileID: 2800000, guid: 53a702370387eeb4abdc6f3e69c05c5c, type: 3}
   cursorHotspot: {x: 0, y: 0}
   m_SplashScreenBackgroundColor: {r: 0.13725491, g: 0.12156863, b: 0.1254902, a: 1}
   m_ShowUnitySplashScreen: 1
@@ -141,7 +141,9 @@ PlayerSettings:
   visionOSBundleVersion: 1.0
   tvOSBundleVersion: 1.0
   bundleVersion: 0.1
-  preloadedAssets: []
+  preloadedAssets:
+  - {fileID: -1053584927770366620, guid: 97bfb4e79795f944989f2d1336f46771, type: 2}
+  - {fileID: 8503231446205859476, guid: 3eba38a6b30c18649852d691e2f61dec, type: 2}
   metroInputSource: 0
   wsaTransparentSwapchain: 0
   m_HolographicPauseOnTrackingLoss: 1
@@ -291,7 +293,7 @@ PlayerSettings:
   - m_BuildTarget: 
     m_Icons:
     - serializedVersion: 2
-      m_Icon: {fileID: 2800000, guid: 884a9eb796cb5e6488bfd893abbee7c2, type: 3}
+      m_Icon: {fileID: 2800000, guid: 53a702370387eeb4abdc6f3e69c05c5c, type: 3}
       m_Width: 128
       m_Height: 128
       m_Kind: 0
