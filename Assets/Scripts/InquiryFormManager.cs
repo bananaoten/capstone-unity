@@ -269,66 +269,74 @@ public class InquiryFormManager : MonoBehaviour
             reservationBlocker.SetActive(!hasAccepted);
     }
 
-    public void SubmitInquiry()
+    // ...existing code...
+public void SubmitInquiry()
+{
+    errorText.text = "";
+
+    // ✅ Detect subdivision again at submission
+    DetectSubdivision();
+
+    string fullName = fullNameInput.text.Trim();
+    string email = emailInput.text.Trim();
+    string phone = phoneInput.text.Trim();
+    string message = messageInput.text.Trim();
+    string inquiryType = inquiryTypeDropdown.options[inquiryTypeDropdown.value].text;
+    string propertyId = usePropertyId ? propertyDropdown.options[propertyDropdown.value].text.ToLower() : null;
+
+    // If a propertyId was selected, use it to determine the subdivision (override prefab detection)
+    if (!string.IsNullOrEmpty(propertyId))
     {
-        errorText.text = "";
-
-        // ✅ Detect subdivision again at submission
-        DetectSubdivision();
-
-        string fullName = fullNameInput.text.Trim();
-        string email = emailInput.text.Trim();
-        string phone = phoneInput.text.Trim();
-        string message = messageInput.text.Trim();
-        string inquiryType = inquiryTypeDropdown.options[inquiryTypeDropdown.value].text;
-        string propertyId = usePropertyId ? propertyDropdown.options[propertyDropdown.value].text.ToLower() : null;
-
-        if (string.IsNullOrEmpty(fullName)) { ShowError("Full name is required."); return; }
-        if (string.IsNullOrEmpty(email) || !IsValidEmail(email)) { ShowError("Please enter a valid email address."); return; }
-        if (string.IsNullOrEmpty(phone) || !Regex.IsMatch(phone, @"^[0-9]+$")) { ShowError("Phone must contain numbers only."); return; }
-        if (string.IsNullOrEmpty(message)) { ShowError("Additional message is required."); return; }
-        if (auth.CurrentUser == null) { ShowError("You must be logged in to submit an inquiry."); return; }
-
-        Debug.Log($"[SubmitInquiry] Writing to subdivision={subdivision}");
-
-        string inquiryId = dbRef.Child("inquiries").Child(subdivision).Push().Key;
-
-        InquiryData inquiry = new InquiryData
-        {
-            fullName = fullName,
-            email = email,
-            phone = phone,
-            message = message,
-            inquiryType = inquiryType,
-            propertyId = propertyId,
-            propertyType = propertyId,
-            consent = "agree",
-            status = "pending",
-            assignedAgentUid = null,
-            timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-        };
-
-        string json = JsonUtility.ToJson(inquiry);
-
-        dbRef.Child("inquiries").Child(subdivision).Child(inquiryId)
-            .SetRawJsonValueAsync(json).ContinueWithOnMainThread(task =>
-            {
-                if (task.IsCompleted)
-                {
-                    dbRef.Child("user_inquiries").Child(auth.CurrentUser.UserId).Child(subdivision).SetValueAsync(inquiryId);
-
-                    ShowError("✅ Inquiry submitted successfully!", success: true);
-                    ClearForm();
-
-                    ListenToUserInquiry(auth.CurrentUser.UserId, subdivision);
-                }
-                else
-                {
-                    ShowError("❌ Error submitting inquiry.");
-                }
-            });
+        subdivision = propertyId;      // e.g. "treelane" or "lancris"
+        usePropertyId = true;
     }
 
+    if (string.IsNullOrEmpty(fullName)) { ShowError("Full name is required."); return; }
+    if (string.IsNullOrEmpty(email) || !IsValidEmail(email)) { ShowError("Please enter a valid email address."); return; }
+    if (string.IsNullOrEmpty(phone) || !Regex.IsMatch(phone, @"^[0-9]+$")) { ShowError("Phone must contain numbers only."); return; }
+    if (string.IsNullOrEmpty(message)) { ShowError("Additional message is required."); return; }
+    if (auth.CurrentUser == null) { ShowError("You must be logged in to submit an inquiry."); return; }
+
+    Debug.Log($"[SubmitInquiry] Writing to subdivision={subdivision}");
+
+    string inquiryId = dbRef.Child("inquiries").Child(subdivision).Push().Key;
+
+    InquiryData inquiry = new InquiryData
+    {
+        fullName = fullName,
+        email = email,
+        phone = phone,
+        message = message,
+        inquiryType = inquiryType,
+        propertyId = propertyId,
+        propertyType = string.IsNullOrEmpty(propertyId) ? subdivision : propertyId,
+        consent = "agree",
+        status = "pending",
+        assignedAgentUid = null,
+        timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+    };
+
+    string json = JsonUtility.ToJson(inquiry);
+
+    dbRef.Child("inquiries").Child(subdivision).Child(inquiryId)
+        .SetRawJsonValueAsync(json).ContinueWithOnMainThread(task =>
+        {
+            if (task.IsCompleted)
+            {
+                dbRef.Child("user_inquiries").Child(auth.CurrentUser.UserId).Child(subdivision).SetValueAsync(inquiryId);
+
+                ShowError("✅ Inquiry submitted successfully!", success: true);
+                ClearForm();
+
+                ListenToUserInquiry(auth.CurrentUser.UserId, subdivision);
+            }
+            else
+            {
+                ShowError("❌ Error submitting inquiry.");
+            }
+        });
+}
+// ...existing code...
     private void ShowError(string msg, bool success = false, bool pending = false)
     {
         if (errorText != null)
